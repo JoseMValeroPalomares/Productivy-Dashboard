@@ -1,0 +1,442 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Mega Simulador Estadístico de Casino{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg, #273055 20%, #49ffd7 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #eafffc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .container {
+    margin: 43px auto 0 auto;
+    background: rgba(31,38,66,0.97);
+    border-radius: 20px;
+    box-shadow: 0 7px 36px #49ffd724, 0 2px 11px #3446743f;
+    width: 98vw; max-width: 580px; min-width: 260px;
+    padding: 34px 2vw 25px 2vw;
+    animation: fadein 0.7s;
+  }
+  h1 {
+    color: #39fcb6;
+    font-size: 2em;
+    margin-bottom: 22px;
+    letter-spacing: 2px;
+    text-align: center;
+    text-shadow: 0 2px 14px #122a3999;
+  }
+  .menu {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 30px;
+  }
+  .btn-menu {
+    padding: 15px 0;
+    border-radius: 11px;
+    font-size: 1.05em;
+    background: linear-gradient(90deg,#46fcb7 15%,#3f50fb 80%);
+    color: #133849;
+    border: none;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 1.5px 9px #49ffd735;
+    transition: filter 0.15s, background 0.18s;
+    letter-spacing: 0.7px;
+  }
+  .btn-menu.active, .btn-menu:focus {
+    background: linear-gradient(90deg,#49ffd1 9%,#35e9a3 91%);
+    filter: brightness(1.14);
+  }
+  @media (max-width: 480px) {
+    .menu { grid-template-columns: 1fr; }
+  }
+  .panel { display: none; animation: fadein 0.8s; }
+  .panel.active { display: block; }
+  .input-row {
+    margin-bottom: 12px;
+    display: flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  label { color: #a8fcfa; font-size:1.06em; }
+  input[type="number"], input[type="text"] {
+    font-family: inherit;
+    border-radius: 7px;
+    border: 1.1px solid #2cfadd;
+    padding: 9px 6px;
+    background: #18244b;
+    color: #35ffd1;
+    font-size: 1.06em;
+    width: 83px;
+    min-width: 65px;
+    margin-right: 7px;
+    outline: none;
+  }
+  input[type="number"]:focus { border-color: #51ffd7; }
+  .btn-op {
+    background: linear-gradient(90deg,#5fffb3 40%,#4582ff 100%);
+    color: #1d2c3b;
+    font-weight:bold;
+    font-size: 1em;
+    border: none;
+    border-radius: 8px;
+    margin-top: 6px;
+    margin-bottom:12px;
+    padding: 11px 30px;
+    cursor: pointer;
+    box-shadow: 0 2.5px 11px #49ffd7a3;
+    transition: filter 0.15s;
+  }
+  .btn-op:focus, .btn-op:hover { filter: brightness(1.11);}
+  .output {
+    background: #15223a;
+    border-radius: 9px;
+    margin-top: 21px;
+    padding: 18px 10px 11px;
+    min-height: 33px;
+    font-size: 1.09em;
+    word-break: break-word;
+    white-space: pre-line;
+    color: #e3fffb;
+    box-shadow: 0 2px 17px #49ffd73d;
+    animation: fadein 0.7s;
+  }
+  .ok { color: #39ffa1; }
+  .error { color: #fd626e; font-weight: bold;}
+  .barra-porc { background: #222f4a; border-radius:10px; height:18px; margin:5px 0; display:flex; }
+  .barra-porc-fill { background: linear-gradient(90deg,#42ffd7 70%,#84ffcf 100%); border-radius:10px; height:100%; transition:width 0.4s;}
+  .barra-porc-label { position:absolute; margin-left:7px; font-size:0.95em; color:#133849; font-weight:bold;}
+  hr { border:none; border-top:1.5px dashed #35ffd1; margin:14px 0 8px;}
+  .ejemplo {
+    color: #bdecfd;
+    font-size: 0.97em;
+    background: #20315a38;
+    border-radius: 8px;
+    padding:7px 16px 5px 16px;
+    margin:12px 0 6px 0;
+    display:inline-block;
+  }
+  @keyframes fadein { from {opacity: 0;} to {opacity: 1;}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Mega Simulador Estadístico de Casino</h1>
+  <div class="menu">
+    <button class="btn-menu active" onclick="showPanel(0)">Apuesta Manual</button>
+    <button class="btn-menu" onclick="showPanel(1)">Apuesta Automática</button>
+    <button class="btn-menu" onclick="showPanel(2)">Simulación Estadística</button>
+    <button class="btn-menu" onclick="showPanel(3)">Estrategia Inteligente</button>
+    <button class="btn-menu" onclick="showPanel(4)">Comparar Estrategias</button>
+  </div>
+  
+  <!-- Paneles -->
+  <div class="panel active">
+    <b class="ok">Juega manualmente (probabilidad de ganar: 50%)</b>
+    <hr>
+    <form onsubmit="apostarManual();return false;">
+      <div class="input-row">
+        <label>Saldo actual:</label>
+        <input id="manual_saldo" type="number" value="1000" min="1">
+      </div>
+      <div class="input-row">
+        <label>Monto a apostar:</label>
+        <input id="manual_apuesta" type="number" value="10" min="1">
+      </div>
+      <button class="btn-op" type="submit">Apostar</button>
+    </form>
+    <div id="manual_out" class="output"></div>
+  </div>
+
+  <div class="panel">
+    <b class="ok">Simula apuestas automáticas tipo Martingala</b>
+    <hr>
+    <form onsubmit="autoApostar();return false;">
+      <div class="input-row">
+        <label>Saldo inicial:</label> <input id="auto_saldo" type="number" value="1000" min="1">
+        <label>Deseo de ganar:</label> <input id="auto_objetivo" type="number" value="300" min="1">
+      </div>
+      <div class="input-row">
+        <label>Apuesta inicial:</label> <input id="auto_base" type="number" value="10" min="1">
+        <label>Segundos (pausa por ronda):</label> <input id="auto_pausa" type="number" value="1" min="0">
+      </div>
+      <button class="btn-op" type="submit">Iniciar</button>
+    </form>
+    <div id="auto_out" class="output"></div>
+  </div>
+
+  <div class="panel">
+    <b class="ok">Simulación múltiple de Martingala clásica</b>
+    <hr>
+    <form onsubmit="simularStats();return false;">
+      <div class="input-row">
+        <label>Simulaciones:</label> <input id="stat_sim" type="number" value="1000" min="1">
+      </div>
+      <div class="input-row">
+        <label>Saldo inicial:</label> <input id="stat_saldo" type="number" value="1000" min="1">
+        <label>Apuesta base:</label> <input id="stat_apuesta" type="number" value="10" min="1">
+      </div>
+      <div class="input-row">
+        <label>Deseo ganar:</label> <input id="stat_deseo" type="number" value="300" min="1">
+      </div>
+      <button class="btn-op" type="submit">Simular</button>
+    </form>
+    <div id="stat_out" class="output"></div>
+  </div>
+
+  <div class="panel">
+    <b class="ok">Simulación Martingala con límite de derrotas antes de reiniciar apuesta</b>
+    <hr>
+    <form onsubmit="simularInteligente();return false;">
+      <div class="input-row">
+        <label>Simulaciones:</label> <input id="intel_sim" type="number" value="1000" min="1">
+      </div>
+      <div class="input-row">
+        <label>Saldo inicial:</label> <input id="intel_saldo" type="number" value="1000" min="1">
+        <label>Apuesta base:</label> <input id="intel_apuesta" type="number" value="10" min="1">
+      </div>
+      <div class="input-row">
+        <label>Deseo ganar:</label> <input id="intel_deseo" type="number" value="300" min="1">
+        <label>Derrotas seguidas (reinicio):</label> <input id="intel_n" type="number" value="3" min="1">
+      </div>
+      <button class="btn-op" type="submit">Simular</button>
+    </form>
+    <div id="intel_out" class="output"></div>
+  </div>
+
+  <div class="panel">
+    <b class="ok">Comparativa entre diferentes límites de derrotas</b>
+    <hr>
+    <form onsubmit="compararEstrat();return false;">
+      <div class="input-row">
+        <label>Simulaciones:</label> <input id="comparar_sim" type="number" value="500" min="1">
+      </div>
+      <div class="input-row">
+        <label>Saldo inicial:</label> <input id="comparar_saldo" type="number" value="1000" min="1">
+        <label>Apuesta base:</label> <input id="comparar_apuesta" type="number" value="10" min="1">
+      </div>
+      <div class="input-row">
+        <label>Deseo ganar:</label> <input id="comparar_deseo" type="number" value="300" min="1">
+      </div>
+      <div class="input-row">
+        <label>Desde:</label> <input id="comparar_min" type="number" value="2" min="1">
+        <label>Hasta:</label> <input id="comparar_max" type="number" value="7" min="1">
+      </div>
+      <button class="btn-op" type="submit">Comparar</button>
+    </form>
+    <div id="comparar_out" class="output"></div>
+  </div>
+
+  <div class="ejemplo">
+    Probabilidad de ganar simulada: <b>49%</b><br>
+    Estrategias tipo Martingala.<br>
+    El saldo y la apuesta pueden crecer mucho si hay rachas de derrotas.
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+/** Cambiar panel activo */
+function showPanel(n) {
+  document.querySelectorAll('.btn-menu').forEach((b,i)=>b.classList.toggle('active',i===n));
+  document.querySelectorAll('.panel').forEach((d,i)=>d.classList.toggle('active',i===n));
+}
+
+/** Utilidad: moneda con prob 49% ganar */
+function randGana() { return Math.random()<0.49; }
+
+/* ------ Modo Manual ------------- */
+function apostarManual() {
+  let saldo = +document.getElementById('manual_saldo').value;
+  let apuesta = +document.getElementById('manual_apuesta').value;
+  const out = document.getElementById('manual_out');
+  if(apuesta<=0 || apuesta>saldo) {
+    out.innerHTML = "<span class='error'>Apuesta no válida.</span>";
+    return;
+  }
+  if(randGana()) {
+    saldo = saldo - apuesta + (apuesta*2);
+    out.innerHTML = `<span class="ok">¡Has ganado la apuesta!</span> Nuevo saldo: <b>${saldo}</b> $`;
+  } else {
+    saldo -= apuesta;
+    out.innerHTML = `<span class="error">Has perdido la apuesta.</span> Nuevo saldo: <b>${saldo}</b> $`;
+  }
+  document.getElementById('manual_saldo').value=saldo;
+}
+
+/* ------ Apuesta Automática Martingala ------- */
+async function autoApostar() {
+  let saldo = +document.getElementById('auto_saldo').value;
+  let deseo = +document.getElementById('auto_objetivo').value;
+  let apuesta = +document.getElementById('auto_base').value;
+  let pausa = +document.getElementById('auto_pausa').value;
+  const out = document.getElementById('auto_out');
+  let apuestaBase = apuesta, objetivo = saldo+deseo, salida="";
+  if([saldo, deseo, apuestaBase, pausa].some(v => isNaN(v)||v<=0)) {
+    out.innerHTML = "<span class='error'>Datos no válidos.</span>"; return;
+  }
+  out.innerHTML = "";
+  await new Promise(res => setTimeout(res,300));
+  while(saldo<objetivo && saldo>=apuesta) {
+    salida += `<br><b>Apostando ${apuesta} $</b>...`;
+    await new Promise(res => setTimeout(res,pausa*1000));
+    if(randGana()) {
+      saldo = saldo-apuesta+apuesta*2;
+      salida += ` <span class="ok">¡Ganaste! </span> Saldo: <b>${saldo}</b> $<br>`;
+      apuesta = apuestaBase;
+    } else {
+      saldo -= apuesta;
+      salida += ` <span class="error">Perdiste. </span> Saldo: <b>${saldo}</b> $<br>`;
+      apuesta *= 2;
+    }
+    out.innerHTML = salida;
+  }
+  if(saldo>=objetivo) out.innerHTML += `<hr><span class="ok">¡Objetivo alcanzado! Saldo final: <b>${saldo}</b>&nbsp;$</span>`;
+  else out.innerHTML += `<hr><span class="error">Te quedaste sin saldo para apostar más.<br>Saldo: <b>${saldo}</b>&nbsp;$</span>`;
+}
+
+/* --- Simulación múltiple clásica --- */
+function simularStats() {
+  // Recibe los datos del formulario
+  let simulaciones = +document.getElementById('stat_sim').value;
+  let saldo_inicial = +document.getElementById('stat_saldo').value;
+  let apuesta_base = +document.getElementById('stat_apuesta').value;
+  let deseo = +document.getElementById('stat_deseo').value;
+  const out = document.getElementById('stat_out');
+  if([simulaciones, saldo_inicial, apuesta_base, deseo].some(v => isNaN(v)||v<=0)) {
+    out.innerHTML = "<span class='error'>Datos no válidos.</span>"; return;
+  }
+  let victorias=0, derrotas=0, total_apuestas=0, max_vic=0, max_der=0, perdidas_tot=0, suma_saldos_previos=0;
+  for(let sim=0; sim<simulaciones; ++sim) {
+    let saldo=saldo_inicial, apuesta=apuesta_base, objetivo=saldo+deseo;
+    let apuestas_realizadas = 0, racha_v=0, racha_d=0, max_racha_v=0, max_racha_d=0;
+    let saldo_antes = saldo;
+    while(saldo<objetivo && saldo>=apuesta) {
+      saldo_antes = saldo;
+      apuestas_realizadas++;
+      if(randGana()) {
+        saldo = saldo-apuesta+apuesta*2;
+        apuesta=apuesta_base;
+        racha_v++; racha_d=0;
+      } else {
+        saldo-=apuesta;
+        apuesta*=2;
+        racha_d++; racha_v=0;
+      }
+      if(racha_v>max_racha_v) max_racha_v=racha_v;
+      if(racha_d>max_racha_d) max_racha_d=racha_d;
+    }
+    if(saldo>=objetivo) victorias++;
+    else { derrotas++; perdidas_tot++; suma_saldos_previos+=saldo_antes; }
+    total_apuestas+=apuestas_realizadas;
+    if(max_racha_v>max_vic) max_vic=max_racha_v;
+    if(max_racha_d>max_der) max_der=max_racha_d;
+  }
+  const exito = (100*victorias/simulaciones).toFixed(2);
+  let outText=`<b>Simulaciones:</b> ${simulaciones}
+  <br>Objetivo +${deseo} € | Apuesta inicial: ${apuesta_base} € | Saldo inicial: ${saldo_inicial} €
+  <br><span class="ok">Victorias:</span> ${victorias} | <span class="error">Derrotas:</span> ${derrotas}
+  <br>Porcentaje de éxito: <b>${exito}%</b>
+  <br>Promedio de apuestas por simulación: ${(total_apuestas/simulaciones).toFixed(2)}
+  <br>Mayor racha de victorias: ${max_vic} | Mayor racha de derrotas: ${max_der}`;
+  if(perdidas_tot) outText+=`<br>Promedio saldo antes de perder: <b>${(suma_saldos_previos/perdidas_tot).toFixed(2)} €</b>`;
+  out.innerHTML=outText;
+}
+
+/* ---- Estadísticas Martingala Inteligente ------- */
+function simularInteligente() {
+  let simulaciones = +document.getElementById('intel_sim').value;
+  let saldo_inicial = +document.getElementById('intel_saldo').value;
+  let apuesta_base = +document.getElementById('intel_apuesta').value;
+  let deseo = +document.getElementById('intel_deseo').value;
+  let max_derrotas = +document.getElementById('intel_n').value;
+  const out = document.getElementById('intel_out');
+  if([simulaciones, saldo_inicial, apuesta_base, deseo, max_derrotas].some(v => isNaN(v)||v<=0)) {
+    out.innerHTML = "<span class='error'>Datos no válidos.</span>"; return;
+  }
+  let victorias=0, derrotas=0, total_apuestas=0, max_vic=0, max_der=0;
+  for(let sim=0; sim<simulaciones; ++sim) {
+    let saldo=saldo_inicial, apuesta=apuesta_base, objetivo=saldo+deseo;
+    let apuestas_realizadas=0, racha_v=0, racha_d=0, max_racha_v=0, max_racha_d=0;
+    while(saldo<objetivo && saldo>=apuesta) {
+      apuestas_realizadas++;
+      if(randGana()) {
+        saldo = saldo-apuesta+apuesta*2;
+        apuesta=apuesta_base;
+        racha_v++; racha_d=0;
+      } else {
+        saldo-=apuesta; racha_d++; racha_v=0;
+        if(racha_d>=max_derrotas) { apuesta=apuesta_base; racha_d=0; }
+        else apuesta*=2;
+      }
+      if(racha_v>max_racha_v) max_racha_v=racha_v;
+      if(racha_d>max_racha_d) max_racha_d=racha_d;
+    }
+    saldo>=objetivo ? victorias++ : derrotas++;
+    total_apuestas+=apuestas_realizadas;
+    if(max_racha_v>max_vic) max_vic=max_racha_v;
+    if(max_racha_d>max_der) max_der=max_racha_d;
+  }
+  const exito = (100*victorias/simulaciones).toFixed(2);
+  out.innerHTML = `<b>Simulaciones:</b> ${simulaciones}
+  <br>Reinicio tras <b>${max_derrotas}</b> derrotas seguidas.
+  <br><span class="ok">Victorias:</span> ${victorias} | <span class="error">Derrotas:</span> ${derrotas}
+  <br>Porcentaje de éxito: <b>${exito}%</b>
+  <br>Promedio de apuestas: ${(total_apuestas/simulaciones).toFixed(2)}
+  <br>Mayor racha de victorias: ${max_vic} | Mayor racha de derrotas: ${max_der}`;
+}
+
+/* --- Comparar Estrategias Inteligentes (con barra gráfica) --- */
+function compararEstrat() {
+  let simulaciones = +document.getElementById('comparar_sim').value;
+  let saldo_inicial = +document.getElementById('comparar_saldo').value;
+  let apuesta_base = +document.getElementById('comparar_apuesta').value;
+  let deseo = +document.getElementById('comparar_deseo').value;
+  let min_d = +document.getElementById('comparar_min').value;
+  let max_d = +document.getElementById('comparar_max').value;
+  const out = document.getElementById('comparar_out');
+  if([simulaciones, saldo_inicial, apuesta_base, deseo, min_d, max_d].some(v=>isNaN(v)||v<=0) || max_d<min_d) {
+    out.innerHTML = "<span class='error'>Rango de derrotas no válido.</span>"; return;
+  }
+  let resultTable = `<table style="width:95%;margin:auto;text-align:left;">
+    <tr><th>Derrotas seguidas</th><th>Éxito (%)</th><th class="barra-porc-label">Éxito visual</th></tr>`;
+  for(let limite_derrotas=min_d; limite_derrotas<=max_d; ++limite_derrotas) {
+    let victorias=0, truncadas=0,max_apuestas=5000;
+    for(let sim=0; sim<simulaciones; ++sim) {
+      let saldo=saldo_inicial, apuesta=apuesta_base, objetivo=saldo+deseo, racha_derrotas=0, apuestas_realizadas=0;
+      while(saldo<objetivo && saldo>=apuesta && apuestas_realizadas<max_apuestas) {
+        apuestas_realizadas++;
+        if(randGana()) { saldo = saldo-apuesta+apuesta*2; apuesta=apuesta_base; racha_derrotas=0;}
+        else {
+          saldo-=apuesta; racha_derrotas++;
+          if(racha_derrotas>=limite_derrotas) { apuesta=apuesta_base; racha_derrotas=0;}
+          else apuesta*=2;
+        }
+      }
+      if(saldo>=objetivo) victorias++;
+      else if(apuestas_realizadas>=max_apuestas) truncadas++;
+    }
+    let total_real = simulaciones-truncadas, porc_optimista=total_real?100*victorias/total_real:0;
+    resultTable += `<tr>
+      <td>${limite_derrotas}</td>
+      <td><b>${porc_optimista.toFixed(2)}</b></td>
+      <td>
+        <div class="barra-porc"><div class="barra-porc-fill" style="width:${porc_optimista}%;"></div></div>
+        ${porc_optimista.toFixed(2)}%
+      </td>
+    </tr>`;
+  }
+  resultTable += "</table>";
+  out.innerHTML = resultTable;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Registro de usuario ✍️{% endblock %}
+
+
+{% block extra_css %}
+<style>
+  main {
+    padding-top: 40px; /* ajusta según la altura del nav */
+  }
+
+  @media (max-width: 600px) {
+    main {
+      padding-top: 70px;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="email"] {
+      padding: 0.7rem 1rem;
+      border-radius: var(--radius);
+      border: none;
+      background: #232e48;
+      color: var(--text);
+      font-size: 1rem;
+      transition: outline var(--transition);
+      outline: 2px solid transparent;
+    }
+  }
+</style>
+
+{% endblock %}
+
+
+{% block content %}
+<section class="form-section">
+  <h1 class="centered-title">✨ Crea tu cuenta</h1>
+  <p class="centered" style="margin-bottom: 1.2rem; color: var(--accent); font-weight: 600;">
+    Únete y comienza a potenciar tu productividad desde hoy
+  </p>
+
+  <form method="POST" autocomplete="off" novalidate>
+    <label for="username" class="sr-only">Usuario</label>
+    <input id="username" type="text" name="username" placeholder=" Usuario o correo" required autofocus autocomplete="username">
+
+    <label for="password" class="sr-only">Contraseña</label>
+    <div class="password-wrapper">
+      <input id="password" type="password" name="password" placeholder=" Contraseña" required autocomplete="new-password" minlength="4" aria-describedby="password-help">
+      <button type="button" class="toggle-password" aria-label="Mostrar contraseña" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="var(--accent)" viewBox="0 0 24 24" >
+          <path d="M12 5c-7 0-9 7-9 7s2 7 9 7 9-7 9-7-2-7-9-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </button>
+    </div>
+
+    <label for="confirm_password" class="sr-only">Confirmar contraseña</label>
+
+    <div class="password-wrapper">
+      <input id="confirm_password" type="password" name="confirm_password" placeholder=" Confirmar contraseña" required autocomplete="new-password" minlength="8" aria-describedby="confirm-password-help">
+      <button type="button" class="toggle-password" aria-label="Mostrar contraseña" tabindex="-1">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="var(--accent)" viewBox="0 0 24 24" >
+          <path d="M12 5c-7 0-9 7-9 7s2 7 9 7 9-7 9-7-2-7-9-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+          <circle cx="12" cy="12" r="2.5"/>
+        </svg>
+      </button>
+    </div>
+    <div></div>
+    <small id="password-help" style="color: var(--text-secondary); margin-top: -0.6rem; margin-bottom: 1rem; display: block;">
+      Recomendamos una contraseña segura con letras, números y símbolos.
+    </small>
+
+    <button type="submit" aria-label="Registrarse y crear cuenta"> Registrarse</button>
+  </form>
+
+  <p class="centered" style="margin-top: 1.6rem; font-weight: 600; color: var(--accent);">
+    ¿Ya tienes cuenta? <a href="{{ url_for('auth.login') }}" style="font-weight: 700;"> Inicia sesión aquí</a>
+  </p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <ul style="margin-top: 1rem; color: var(--error); list-style: none; padding-left: 0;">
+        {% for category, message in messages %}
+          <li class="flash {{ category }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+</section>
+{% endblock %}

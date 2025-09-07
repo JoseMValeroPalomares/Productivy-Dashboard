@@ -1,0 +1,1757 @@
+{% extends 'base2.html' %}
+
+{% block extra_css %}
+<style>
+/* ================== ADAPTACIONES Y ESTILOS ================== */
+/* Ajustes para que combine con tu main.css */
+#app-container { display:flex; gap:18px; align-items:flex-start; width:100%; }
+
+#calendar-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 18px 18px 0 30px; /* padding arriba e izquierda */
+  box-sizing: border-box;
+}
+
+/* Sidebar */
+#task-sidebar {
+  width: 320px;
+  max-width: 36vw;
+  min-width: 240px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: var(--shadow);
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  position: sticky;
+  top: 70px;
+}
+
+/* Header sidebar */
+.sidebar-header { display:flex; gap:8px; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.sidebar-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+
+/* Search */
+#task-search { width:100%; padding:8px 10px; border-radius:10px; border:none; background: rgba(20,30,56,0.45); color:var(--text); }
+
+/* Task items */
+.task-list { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+.task-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 10px;
+  padding: 8px 10px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  border: 1px solid rgba(255,255,255,0.03);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.task-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(2,6,23,0.45); }
+.task-info { flex:1; min-width:0; }
+
+/* Title and meta */
+.task-title { font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.task-meta { font-size: 0.85rem; color: var(--text-secondary); display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+
+/* Priority stripe */
+.priority-stripe { width:8px; border-radius:8px; margin-right:8px; flex-shrink:0; height:44px; }
+.p-high { background: linear-gradient(180deg, #ef4444, #b91c1c); } /* rojo */
+.p-medium { background: linear-gradient(180deg, #f59e0b, #b45309); } /* naranja */
+.p-low { background: linear-gradient(180deg, #10b981, #047857); } /* verde */
+
+/* Tag pill */
+.tag-pill { padding:4px 8px; border-radius:999px; font-size:0.78rem; font-weight:600; display:inline-block; color:#06121a; background:#e6f7f0; }
+
+/* Button flotante + */
+#add-task-btn {
+  position: fixed;
+  right: calc(320px + 24px);
+  bottom: 26px;
+  width:62px; height:62px;
+  background: linear-gradient(135deg,var(--accent),var(--primary));
+  border-radius:999px; border:none; font-size:30px; color:#08203a; box-shadow:0 12px 30px rgba(2,6,23,0.45);
+  z-index:1200; cursor:pointer;
+}
+
+/* Modal (reutilizo tu .custom-modal .modal-content pero añado mejoras) */
+.custom-modal .modal-content {
+  background: linear-gradient(145deg, rgba(255,255,255,0.97) 70%, rgba(180,220,255,0.15) 100%);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(80,180,255,0.28);
+  animation: scaleIn 0.35s ease-out;
+  padding: 24px;
+  transform: translateY(-20px);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.form-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+.form-row .col { flex:1; }
+
+/* Subtasks */
+.subtasks { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
+
+/* Recurrence block */
+.recurrence-block { background: rgba(255,255,255,0.02); padding:8px; border-radius:8px; margin-top:8px; }
+
+/* Archive panel */
+#history-toggle { background: transparent; border:1px dashed rgba(255,255,255,0.06); padding:6px 8px; border-radius:8px; cursor:pointer; font-size:0.9rem; }
+
+/* Small screens: sidebar collapses below calendar */
+
+
+.custom-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.45); /* oscurece */
+  backdrop-filter: blur(6px);   /* difumina el resto */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 2000;
+}
+
+.custom-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+
+
+.custom-modal.active .modal-content {
+  transform: translateY(0);
+}
+
+:root {
+  --transition-fast: 0.18s ease;
+  --transition: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+
+/* ===== Input búsqueda ===== */
+#task-search {
+  background: rgba(20,30,56,0.5);
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+#task-search:focus {
+  background: rgba(20,30,56,0.65);
+  transform: scale(1.02);
+  outline: none;
+}
+
+/* ===== Tarjetas de tareas ===== */
+.task-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.task-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.task-card:hover::before {
+  transform: translateX(100%);
+}
+
+.task-card {
+  animation: fadeInUp var(--transition-slow);
+}
+
+/* ===== Botón flotante añadir ===== */
+#add-task-btn {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+#add-task-btn:hover {
+  transform: scale(1.08) rotate(4deg);
+  box-shadow: 0 14px 34px rgba(2,6,23,0.6);
+}
+
+
+/* ===== Botones generales ===== */
+.save-btn, .cancel-btn {
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.save-btn:hover, .cancel-btn:hover {
+  transform: translateY(-2px);
+}
+
+/* ===== Animaciones ===== */
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  0% { opacity: 0; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+
+body {
+  background: linear-gradient(135deg, rgba(80,180,255,0.55) 0%, rgba(180,220,255,0.65) 100%);
+  min-height: 100vh;
+  font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+  transition: background 0.7s cubic-bezier(.4,2,.3,1);
+  animation: bgFadeIn 1.2s;
+}
+
+@keyframes bgFadeIn {
+  from { background: rgba(80,180,255,0.15); }
+  to   { background: linear-gradient(135deg, rgba(80,180,255,0.55) 0%, rgba(180,220,255,0.65) 100%);}
+}
+
+/* ===== Botones generales ===== */
+button, .save-btn, .cancel-btn, #history-toggle {
+  background: rgba(255,255,255,0.18);
+  color: #0a2540;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 2px 8px rgba(80,180,255,0.10);
+  cursor: pointer;
+  transition: background 0.22s, color 0.22s, box-shadow 0.22s, transform 0.18s;
+  outline: none;
+}
+
+button:hover, .save-btn:hover, .cancel-btn:hover, #history-toggle:hover {
+  background: rgba(80,180,255,0.22);
+  color: #0a2540;
+  box-shadow: 0 4px 18px rgba(80,180,255,0.18);
+  transform: translateY(-2px) scale(1.04);
+}
+
+button:active, .save-btn:active, .cancel-btn:active, #history-toggle:active {
+  background: rgba(80,180,255,0.32);
+  color: #0a2540;
+  transform: scale(0.98);
+}
+
+/* ===== Botón flotante + ===== */
+#add-task-btn {
+  background: linear-gradient(135deg, #4fc3f7 60%, #1976d2 100%);
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(80,180,255,0.25);
+  font-size: 2.2rem;
+  border: none;
+  border-radius: 50%;
+  width: 62px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.22s, box-shadow 0.22s, transform 0.18s;
+  z-index: 1200;
+}
+
+#add-task-btn:hover {
+  background: linear-gradient(135deg, #1976d2 60%, #4fc3f7 100%);
+  box-shadow: 0 16px 40px rgba(80,180,255,0.32);
+  transform: scale(1.10) rotate(8deg);
+}
+
+/* ===== Sidebar y tarjetas ===== */
+#task-sidebar {
+  background: linear-gradient(180deg, rgba(255,255,255,0.18), rgba(80,180,255,0.10) 100%);
+  box-shadow: 0 8px 32px rgba(80,180,255,0.13);
+  border: 1.5px solid rgba(80,180,255,0.09);
+  animation: fadeInUp 1s;
+}
+
+.task-card {
+  background: linear-gradient(120deg, rgba(255,255,255,0.22) 60%, rgba(80,180,255,0.10) 100%);
+  border: 1.5px solid rgba(80,180,255,0.09);
+  box-shadow: 0 2px 12px rgba(80,180,255,0.10);
+  transition: box-shadow 0.22s, transform 0.18s;
+  animation: fadeInUp 0.7s;
+}
+
+.task-card:hover {
+  box-shadow: 0 8px 32px rgba(80,180,255,0.18);
+  transform: translateY(-6px) scale(1.02);
+}
+
+.task-title {
+  color: #0a2540;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.task-meta {
+  color: #1976d2;
+}
+
+/* ===== Tag pill ===== */
+.tag-pill {
+  background: #e3f2fd;
+  color: #1976d2;
+  font-weight: 700;
+  border: 1px solid #b3e5fc;
+  box-shadow: 0 1px 4px rgba(80,180,255,0.08);
+  transition: background 0.22s, color 0.22s;
+}
+
+/* ===== Priority stripe ===== */
+.priority-stripe.p-high { background: linear-gradient(180deg, #ef4444, #b91c1c); }
+.priority-stripe.p-medium { background: linear-gradient(180deg, #f59e0b, #b45309); }
+.priority-stripe.p-low { background: linear-gradient(180deg, #10b981, #047857); }
+.priority-stripe { box-shadow: 0 0 8px rgba(80,180,255,0.13); }
+
+/* ===== Inputs ===== */
+input, select {
+  background: rgba(255,255,255,0.22);
+  border: 1.5px solid rgba(80,180,255,0.13);
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #0a2540;
+  transition: background 0.18s, border 0.18s;
+  font-size: 1rem;
+}
+
+input:focus, select:focus {
+  background: rgba(80,180,255,0.13);
+  border-color: #1976d2;
+  outline: none;
+}
+
+#task-search {
+  background: rgba(255,255,255,0.28);
+  border: 1.5px solid rgba(80,180,255,0.13);
+  color: #0a2540;
+  transition: background 0.18s, border 0.18s, transform 0.18s;
+}
+
+#task-search:focus {
+  background: rgba(80,180,255,0.13);
+  border-color: #1976d2;
+  transform: scale(1.03);
+}
+
+/* ===== Modal ===== */
+.custom-modal {
+  background: rgba(80,180,255,0.22);
+  backdrop-filter: blur(8px);
+  animation: modalFadeIn 0.5s;
+}
+
+@keyframes modalFadeIn {
+  from { background: rgba(80,180,255,0.01);}
+  to   { background: rgba(80,180,255,0.22);}
+}
+
+.custom-modal .modal-content {
+  background: linear-gradient(120deg, rgba(255,255,255,0.95) 80%, rgba(80,180,255,0.10) 100%);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(80,180,255,0.18);
+  animation: scaleIn 0.35s;
+  padding: 18px;
+  transform: translateY(-20px);
+  transition: transform 0.25s ease;
+  max-width: 680px;
+  width: 94%;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.custom-modal .modal-header {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1976d2;
+  margin-bottom: 14px;
+  text-align: center;
+}
+
+.custom-modal .modal-content:hover {
+  box-shadow: 0 18px 48px rgba(80,180,255,0.35);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.93);}
+  to   { opacity: 1; transform: scale(1);}
+}
+
+/* ===== Animaciones ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px);}
+  to   { opacity: 1; transform: translateY(0);}
+}
+
+/* ===== Subtasks ===== */
+.subtask-item {
+  background: rgba(80,180,255,0.07);
+  border-radius: 8px;
+  padding: 4px 8px;
+  transition: background 0.18s;
+}
+
+.subtask-item:hover {
+  background: rgba(80,180,255,0.13);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 980px) {
+  #app-container { flex-direction: column; }
+  #task-sidebar { width:100%; position:relative; height:auto; top:0; }
+  #add-task-btn{ right:22px; bottom:84px; }
+}
+
+@media (max-width: 600px) {
+  .custom-modal .modal-content {
+    width: 98%;
+    max-height: 92vh;
+    padding: 14px;
+  }
+  .tag-pill, span.tag-pill {
+    display: none !important;
+  }
+.task-card {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  transition: none !important; /* evita animaciones que bloqueen drag */
+  transform: none !important;  /* evita escalados que bloqueen drag */
+}
+
+
+}
+
+/* ===== Calendar ===== */
+#calendar {
+  background: linear-gradient(120deg, rgba(255,255,255,0.92) 80%, rgba(80,180,255,0.10) 100%);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(80,180,255,0.13);
+  animation: fadeInUp 1s;
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(80,180,255,0.08);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(80,180,255,0.18);
+  border-radius: 8px;
+}
+
+/* ===== Otros detalles ===== */
+.sidebar-header strong {
+  color: #1976d2;
+  letter-spacing: 0.5px;
+  font-size: 1.1rem;
+}
+
+h1 {
+  color: #1976d2 !important;
+  text-shadow: 0 2px 8px rgba(80,180,255,0.13);
+  animation: fadeInUp 1.2s;
+}
+
+label {
+  color: #1976d2;
+  font-weight: 600;
+  font-size: 0.98rem;
+}
+
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(90deg, #2759b8 0%, #69a0ff 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 9px 48px;
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: 1px;
+  box-shadow: 0 6px 32px rgba(80,180,255,0.22), 0 1.5px 8px #1e3c72;
+  cursor: pointer;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.32s, box-shadow 0.32s, transform 0.18s, color 0.22s;
+  min-width: 260px;
+  max-width: 420px;
+  justify-content: center;
+  animation: futuristicPulse 2.2s infinite alternate;
+}
+
+.home-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(80,180,255,0.18) 0%, rgba(255,255,255,0.09) 100%);
+  opacity: 0.7;
+  z-index: 0;
+  pointer-events: none;
+  transition: opacity 0.32s;
+}
+
+.home-btn::after {
+  content: "";
+  position: absolute;
+  left: -40%;
+  top: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(120deg, rgba(255,255,255,0.22) 0%, rgba(80,180,255,0.13) 100%);
+  filter: blur(12px);
+  opacity: 0.5;
+  transform: skewX(-18deg);
+  transition: left 0.7s cubic-bezier(.4,2,.3,1);
+  z-index: 1;
+}
+
+.home-btn:hover {
+  background: linear-gradient(90deg, #2a5298 0%, #1e3c72 100%);
+  color: #fff;
+  box-shadow: 0 12px 48px rgba(80,180,255,0.32), 0 2px 12px #2a5298;
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.home-btn:hover::after {
+  left: 110%;
+}
+
+@keyframes futuristicPulse {
+  0% { box-shadow: 0 6px 32px rgba(80,180,255,0.22), 0 1.5px 8px #1e3c72; }
+  100% { box-shadow: 0 12px 48px rgba(80,180,255,0.32), 0 2px 12px #2a5298; }
+}
+
+/* Sidebar: tarea completada */
+.task.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Subtarea completada */
+.subtask.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Calendario: evento completado */
+.fc-event.completed {
+  background-color: #d3d3d3 !important;
+  border-color: #b0b0b0 !important;
+  color: #555 !important;
+  text-decoration: line-through;
+}
+
+
+
+
+
+
+
+/* ----------------------------
+   Mejora modal (usa tus IDs)
+   ----------------------------*/
+#taskModal.custom-modal,
+#deleteConfirmModal.custom-modal {
+  background: rgba(6,12,28,0.64);           /* overlay más elegante */
+  backdrop-filter: blur(8px) saturate(120%);
+  transition: background .28s ease, opacity .28s ease;
+}
+
+/* modal content específico */
+#taskModal .modal-content,
+#deleteConfirmModal .modal-content {
+  max-width: 720px;
+  width: 94%;
+  padding: 22px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 80%, rgba(240,250,255,0.75) 100%);
+  box-shadow: 0 20px 48px rgba(2,6,23,0.46);
+  transform: translateY(-8px) scale(.995);
+  transition: transform .28s cubic-bezier(.2,.9,.26,1), box-shadow .28s;
+  overflow: visible;
+}
+.custom-modal.active .modal-content { transform: translateY(0) scale(1); }
+
+/* título del modal (ya existe en tu HTML: #taskModalTitle) */
+#taskModalTitle {
+  margin: 0 0 12px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-light, #1976d2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* etiquetas/labels dentro del modal */
+#taskModal label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--primary-light, #1976d2);
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+/* inputs dentro del modal — selector acotado a #taskModal para no afectar todo */
+#taskModal input[type="text"],
+#taskModal input[type="date"],
+#taskModal input[type="color"],
+#taskModal select,
+#taskModal textarea {
+  width: 80%;
+  background: #fff;
+  border: 1px solid rgba(25,118,210,0.12);
+  padding: 10px 12px;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(0,0,0,0.02);
+  color: #0a2540;
+  transition: box-shadow .18s, transform .12s, border-color .12s;
+}
+#taskModal input:focus, #taskModal select:focus, #taskModal textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 8px 22px rgba(25,118,210,0.10);
+  transform: translateY(-1px);
+}
+
+/* checkbox estilo moderno */
+#taskModal input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #1976d2;
+  vertical-align: middle;
+  transform: translateY(2px);
+}
+
+/* Botones dentro del modal (IDs reales de tu HTML) */
+#taskModal #saveTaskBtn,
+#confirmDeleteBtn,
+#addSubtaskBtn {
+  background: linear-gradient(135deg,#4fc3f7 20%,#1976d2 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(25,118,210,0.18);
+  transition: transform .14s ease, box-shadow .14s;
+}
+#taskModal #saveTaskBtn:hover,
+#confirmDeleteBtn:hover,
+#addSubtaskBtn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(25,118,210,0.24);
+}
+
+/* Botones de cancelar (IDs reales: cancelTaskBtn, cancelDeleteBtn) */
+#taskModal #cancelTaskBtn,
+#cancelDeleteBtn,
+#btn-reset-filters {
+  background: rgba(255,255,255,0.92);
+  color: #1976d2;
+  border: 1px solid rgba(25,118,210,0.10);
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+#taskModal #cancelTaskBtn:hover,
+#cancelDeleteBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(25,118,210,0.06);
+}
+
+/* foco visible accesible */
+#taskModal #saveTaskBtn:focus-visible,
+#taskModal #cancelTaskBtn:focus-visible,
+#addSubtaskBtn:focus-visible {
+  outline: 3px solid rgba(25,118,210,0.16);
+  outline-offset: 4px;
+  border-radius: 12px;
+}
+
+/* mejora botón flotante + (ya lo tienes; esto lo perfecciona) */
+#add-task-btn {
+  box-shadow: 0 18px 40px rgba(25,118,210,0.22);
+  border: none;
+  transition: transform .16s ease, box-shadow .16s;
+}
+#add-task-btn:hover {
+  transform: scale(1.12) rotate(6deg);
+  box-shadow: 0 26px 60px rgba(25,118,210,0.28);
+}
+
+/* ------------------------------------------------
+   Tareas completadas — más visibles (usa .task-card)
+   ------------------------------------------------*/
+.task-card.completed,
+#task-list .task-card.completed {
+  background: linear-gradient(90deg, rgba(245,245,245,0.92), rgba(235,239,241,0.9));
+  border-left: 8px solid rgba(158,158,158,0.36);  /* franja lateral visible */
+  color: #43525a;
+  text-decoration: line-through;
+  filter: grayscale(.25);
+  transition: transform .28s cubic-bezier(.2,.9,.26,1), box-shadow .22s, filter .22s, opacity .22s;
+  position: relative;
+  overflow: visible;
+  padding-right: 48px; /* espacio para el check */
+}
+
+/* check circular al final de la tarjeta */
+.task-card.completed::after {
+  content: "✔";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 800;
+  padding: 6px;
+  border-radius: 50%;
+  box-shadow: 0 8px 18px rgba(46,125,50,0.10);
+  font-size: .95rem;
+}
+
+/* título de tarea más tenue cuando está completada */
+.task-card.completed .task-title {
+  color: #6b7780;
+  text-decoration: line-through;
+  font-weight: 700;
+}
+
+/* animación corta al marcar completada (se activa al añadir la clase .completed) */
+@keyframes task-settle {
+  from { transform: scale(1.03); opacity: .6; }
+  to   { transform: scale(1); opacity: .95; }
+}
+.task-card.completed { animation: task-settle .26s ease-out; }
+
+/* subtareas completadas */
+.subtask-item.completed {
+  background: rgba(220,240,230,0.36);
+  color: #2f6350;
+  text-decoration: line-through;
+  border-left: 4px solid #a6d4b8;
+  padding-left: 8px;
+  border-radius: 6px;
+}
+
+/* calendario: evento completado (refuerzo) */
+.fc-event.completed {
+  background: linear-gradient(90deg,#e0e0e0,#f5f5f5) !important;
+  border-color: #cfcfcf !important;
+  color: #546e7a !important;
+  text-decoration: line-through;
+  box-shadow: none !important;
+}
+
+/* si existen reglas anteriores tipo .task.completed, estas líneas ayudarán a sobrescribirlas */
+.task.completed,
+.subtask.completed { text-decoration: line-through !important; }
+
+/* reducir animaciones si user lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  .task-card.completed, .custom-modal .modal-content, .task-card { animation: none; transition: none; transform: none; }
+}
+
+
+.task-card[draggable="true"] {
+  cursor: grab;
+}
+
+.task-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+
+/* Contenedor del header del calendario */
+#calendar .fc-toolbar.fc-header-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 1rem;
+  margin-top: 12px;
+  padding-top: 8px;
+}
+
+/* Zonas izquierda, centro y derecha */
+.fc-header-toolbar > div.fc-toolbar-chunk:first-child {
+  flex: 0 0 auto;
+}
+.fc-header-toolbar > div.fc-toolbar-chunk:nth-child(2) {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+}
+.fc-header-toolbar > div.fc-toolbar-chunk:last-child {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* Título del mes */
+.fc-toolbar-chunk h2 {
+  font-size: 1.9rem;         /* Más grande */
+  font-weight: 700;
+  font-family: "Poppins", sans-serif; /* Fuente moderna */
+  color: #1e3a8a;
+  text-transform: capitalize;
+  letter-spacing: 1px;
+  margin: 0 10px;
+}
+
+/* Botones generales FullCalendar */
+.fc .fc-button {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  padding: 8px 16px;
+  margin: 0 4px;
+  font-size: 1rem;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.fc .fc-button:hover {
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
+  transform: translateY(-2px);
+  cursor: pointer;
+}
+
+/* Botón Today (destacado) */
+.fc .fc-today-button {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 50px;
+  padding: 8px 20px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+.fc .fc-today-button:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: scale(1.05);
+}
+
+/* Botón Inicio */
+.fc .fc-homeButton-button {
+  background: linear-gradient(135deg, #69a0ff, #ffffff);
+  color: #0a2540;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 8px 24px;
+  margin-left: 8px;
+  box-shadow: 0 6px 20px rgba(39, 89, 184, 0.4);
+}
+.fc .fc-homeButton-button:hover {
+  background: linear-gradient(135deg, #1e40af, #69a0ff);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(30, 64, 175, 0.55);
+}
+
+/* Botones navegación (prev/next en círculo) */
+.fc .fc-prev-button,
+.fc .fc-next-button {
+  border-radius: 50%;
+  padding: 10px 12px;
+  background: #0ea5e9;
+}
+.fc .fc-prev-button:hover,
+.fc .fc-next-button:hover {
+  background: #0284c7;
+}
+
+
+
+
+/* Ajustes responsive para móvil */
+@media (max-width: 600px) {
+  /* Botones más pequeños y juntos */
+  .fc .fc-button,
+  .fc .fc-prev-button,
+  .fc .fc-today-button,
+  .fc .fc-next-button,
+  .fc .fc-button.fc-homeButton-button {
+    padding: 4px 7px;
+    font-size: 0.85rem;
+    margin: 0 1px;
+    min-width: 0;
+    border-radius: 6px;
+  }
+
+  /* Reducimos gaps y padding del header toolbar */
+  #calendar .fc-toolbar.fc-header-toolbar {
+    padding-left: 2px;
+    padding-right: 2px;
+    gap: 0.25rem;
+  }
+
+  /* Alineamos y centramos mejor el título */
+  .fc-header-toolbar > div.fc-toolbar-chunk:nth-child(2) {
+    justify-content: center;
+    font-size: 1rem;
+  }
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 768px) {
+  /* Header en columna para que no se solape */
+  #calendar .fc-toolbar.fc-header-toolbar {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Botón Inicio más compacto */
+  .fc .fc-homeButton-button {
+    font-size: 0.9rem;
+    padding: 6px 16px;
+    width: auto;          /* evita que se deforme */
+    min-width: 100px;     /* ancho mínimo decente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Título centrado y separado */
+  .fc-toolbar-chunk h2 {
+    font-size: 1.5rem;
+    margin: 0.5rem 0;
+    text-align: center;
+  }
+
+  /* Botones navegación y today en línea, más juntos */
+  .fc-header-toolbar > div.fc-toolbar-chunk:last-child {
+    justify-content: center;
+    gap: 4px;             /* menos espacio entre botones */
+  }
+
+  .fc .fc-prev-button,
+  .fc .fc-today-button,
+  .fc .fc-next-button {
+    padding: 6px 10px;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
+
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<h1 style="text-align:center;color:var(--primary-light);margin-bottom:1rem;">📅 Tus Tareas — Interfaz avanzada (Front)</h1>
+
+<div id="app-container">
+  <div id="calendar-wrap">
+    <div id="calendar"></div>
+  </div>
+
+  <aside id="task-sidebar" aria-label="Panel tareas">
+    <div class="sidebar-header">
+      <strong>Mis tareas</strong>
+      <button id="history-toggle" title="Mostrar historial">Historial</button>
+    </div>
+
+    <input id="task-search" placeholder="Buscar por título, etiqueta..." aria-label="Buscar tareas" />
+
+    <div class="sidebar-filters">
+      <select id="filter-status" title="Filtrar por estado">
+        <option value="all">Todos</option>
+        <option value="pending" selected>Pendientes</option>
+        <option value="completed">Completadas</option>
+      </select>
+
+      <select id="filter-priority" title="Filtrar por prioridad">
+        <option value="any">Cualquier prioridad</option>
+        <option value="1">Alta</option>
+        <option value="2">Media</option>
+        <option value="3">Baja</option>
+      </select>
+
+      <input id="filter-tag" placeholder="Filtrar por etiqueta" list="tags-list" style="min-width:86px;padding:6px;border-radius:8px;background:rgba(0,0,0,0.15);color:var(--text);border:none;" />
+      <datalist id="tags-list"></datalist>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button id="btn-filter-clear" class="save-btn" style="flex:1">Aplicar</button>
+      <button id="btn-reset-filters" class="cancel-btn" style="flex:1">Limpiar</button>
+    </div>
+
+    <div id="task-list" class="task-list" aria-live="polite"></div>
+  </aside>
+</div>
+
+<button id="add-task-btn" aria-label="Añadir tarea">+</button>
+
+<!-- Modales -->
+<div id="taskModal" class="custom-modal" role="dialog" aria-modal="true" aria-hidden="true">
+  <div class="modal-content">
+    <h2 id="taskModalTitle">Nueva tarea</h2>
+    <input type="hidden" id="taskId">
+    <div class="form-row">
+      <div class="col">
+        <label>Título</label>
+        <input id="title" type="text" />
+      </div>
+      <div class="col">
+        <label>Etiqueta</label>
+        <input id="tag" type="text" list="tags-list" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="col">
+        <label>Fecha inicio</label>
+        <input id="start" type="date" />
+      </div>
+      <div class="col">
+        <label>Fecha fin</label>
+        <input id="end" type="date" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div>
+        <label>Prioridad</label>
+        <select id="priority">
+          <option value="1">Alta</option>
+          <option value="2" selected>Media</option>
+          <option value="3">Baja</option>
+        </select>
+      </div>
+      <div>
+        <label>Completada</label>
+        <input id="completed" type="checkbox" />
+      </div>
+      <div>
+        <label>Color etiqueta</label>
+        <input id="tagColor" type="color" value="#e6f7f0" title="Color de la etiqueta" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div style="flex:1">
+        <label>Recurrencia</label>
+        <select id="recurrenceType">
+          <option value="">No repetir</option>
+          <option value="daily">Diaria</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensual</option>
+          <option value="custom">Personalizada (RRULE)</option>
+        </select>
+      </div>
+      <div style="flex:1">
+        <label>RRULE (si personalizada)</label>
+        <input id="rruleText" placeholder="FREQ=WEEKLY;BYDAY=MO,WE,FR" />
+      </div>
+    </div>
+
+    <div>
+      <label>Subtareas</label>
+      <div id="subtasks" class="subtasks"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input id="newSubtaskText" placeholder="Nueva subtarea..." style="flex:1;padding:8px;border-radius:8px;background:rgba(0,0,0,0.12);border:none;color:var(--text);" />
+        <button id="addSubtaskBtn" class="save-btn">Añadir</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
+      <button id="cancelTaskBtn" class="cancel-btn">Cancelar</button>
+      <button id="saveTaskBtn" class="save-btn">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div id="deleteConfirmModal" class="custom-modal" role="dialog" aria-hidden="true">
+  <div class="modal-content">
+    <h2>Eliminar tarea</h2>
+    <p>¿Seguro que quieres eliminar esta tarea?</p>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;">
+      <button id="cancelDeleteBtn" class="cancel-btn">Cancelar</button>
+      <button id="confirmDeleteBtn" class="save-btn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!--
+<div style="display:flex;justify-content:center;margin-bottom:1.5rem;">
+  <a href="{{ url_for('main.home') }}" class="home-btn">🏠 Inicio</a>
+</div>
+--> 
+
+<!-- Dependencias: FullCalendar + interaction + rrule + sortable -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rrule@2.7.1/dist/es5/rrule.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+/* =================== INTEGRACIÓN CON BACKEND (Flask API) =================== */
+/* Cache local en memoria para la UI (refrescado por calendar/refetch y al guardar) */
+let tasksCache = []; // array de tareas (según serialize_task del backend)
+let nextTempId = -1; // para elementos temporales en UI si hace falta
+
+/* Helpers de fecha */
+function todayStr(offsetDays=0){
+  const d = new Date();
+  d.setDate(d.getDate()+offsetDays);
+  return d.toISOString().slice(0,10);
+}
+
+/* Util: formatea respuesta JSON de tarea para uso en calendario (FullCalendar espera start/end) */
+function mapTaskToEvent(task) {
+  const event = {
+    id: String(task.id),
+    title: task.title,
+    start: task.start,
+    end: task.end || null,
+    extendedProps: {
+      priority: task.priority,
+      tag: task.tag,
+      completed: task.completed,
+      tagColor: task.tagColor || '',
+      subtasks: task.subtasks || []
+    }
+  };
+
+  if (task.rruleText) {
+    event.rrule = task.rruleText;
+  }
+
+  return event;
+}
+
+/* =================== LLAMADAS AL API =================== */
+async function apiFetchEvents(startISO, endISO){
+  // Llama a GET /api/events?start=...&end=...
+  const params = new URLSearchParams();
+  if (startISO) params.append('start', startISO);
+  if (endISO) params.append('end', endISO);
+  const res = await fetch('/api/events?' + params.toString(), {
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('Error cargando eventos', res.status, text);
+    return [];
+  }
+  const data = await res.json();
+  return data;
+}
+
+async function apiCreateEvent(payload){
+  const res = await fetch('/api/events', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:'error'}));
+    throw err;
+  }
+  const data = await res.json();
+  return data;
+}
+
+async function apiUpdateEventDates(payload){
+  if (!payload.id) throw new Error('Falta el ID para actualizar evento');
+  const res = await fetch('/api/events/' + payload.id, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:'error'}));
+    throw err;
+  }
+  return await res.json();
+}
+
+
+async function apiEditEvent(id, payload){
+  const res = await fetch('/api/events/' + id, {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:'error'}));
+    throw err;
+  }
+  return await res.json();
+}
+
+async function apiDeleteEvent(id){
+  const res = await fetch('/api/events/' + id, {
+    method: 'DELETE',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:'error'}));
+    throw err;
+  }
+  return await res.json();
+}
+
+async function apiCompleteEvent(id){
+  const res = await fetch('/api/events/' + id + '/complete', {
+    method: 'PUT',
+    credentials: 'same-origin',
+    headers: { 'Accept': 'application/json' }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({error:'error'}));
+    throw err;
+  }
+  return await res.json();
+}
+
+/* =================== RENDER CALENDAR (usa API) =================== */
+const calendarEl = document.getElementById('calendar');
+const calendar = new FullCalendar.Calendar(calendarEl, {
+  initialView: 'dayGridMonth',
+  height: 'auto',
+  editable: true,
+  droppable: true,
+  selectable: true,
+  firstDay: 1, // Empieza la semana en lunes
+
+  // Permitir drops externos (para arrastrar tareas desde la lista lateral)
+  droppable: true,
+
+  customButtons: {
+    homeButton: {
+      text: '🏠 Inicio',
+      click: function() {
+        window.location.href = "{{ url_for('main.home') }}";
+      }
+    }
+  },
+
+  // Definimos el headerToolbar para colocar el botón a la izquierda antes del título y las flechas
+  headerToolbar: {
+    left: 'homeButton',
+    center: 'title',
+    right: 'prev today next'
+  },
+
+  events: async function(fetchInfo, successCallback){
+    // Cuando FullCalendar pide eventos para un rango, llamamos a nuestro backend
+    try{
+      const startISO = fetchInfo.startStr;
+      const endISO = fetchInfo.endStr;
+      const tasks = await apiFetchEvents(startISO, endISO);
+      // actualizar cache (puedes decidir almacenar todo en cache global)
+      tasksCache = tasks;
+      const events = tasks.map(mapTaskToEvent);
+      successCallback(events);
+      renderSidebar(); // mantener sidebar sincronizada con última carga
+    }catch(e){
+      console.error('Error al cargar eventos', e);
+      successCallback([]);
+    }
+  },
+
+  eventContent: function(arg){
+    const el = document.createElement('div');
+    el.style.display='flex';
+    el.style.alignItems='center';
+    el.style.gap='8px';
+
+    const stripe = document.createElement('div');
+    stripe.style.width='8px';
+    stripe.style.height='36px';
+    stripe.style.borderRadius='6px';
+    const p = arg.event.extendedProps.priority;
+    stripe.style.background = (p==1)?'linear-gradient(180deg,#ef4444,#b91c1c)':
+                              (p==2)?'linear-gradient(180deg,#f59e0b,#b45309)':
+                              'linear-gradient(180deg,#10b981,#047857)';
+
+    const title = document.createElement('span');
+    title.textContent = arg.event.title;
+    title.style.fontWeight = '700';
+    title.style.fontSize = '0.9rem';
+
+    // Si la tarea está completada, tachamos y bajamos opacidad
+    if (arg.event.extendedProps.completed) {
+      title.style.textDecoration = 'line-through';
+      title.style.opacity = '0.6';
+    }
+
+    const pill = document.createElement('span');
+    pill.className = 'tag-pill';
+    pill.textContent = arg.event.extendedProps.tag || '';
+    if (arg.event.extendedProps.tagColor) pill.style.background = arg.event.extendedProps.tagColor;
+
+    el.appendChild(stripe);
+    el.appendChild(title);
+    el.appendChild(pill);
+
+    return { domNodes: [el] };
+  },
+
+  dateClick: function(info){
+    openTaskModal({ start: info.dateStr, end: '' });
+  },
+
+  eventDrop: async function(info){
+    const id = info.event.id;
+    const start = info.event.startStr ? info.event.startStr.slice(0,10) : null;
+    const end = info.event.endStr ? info.event.endStr.slice(0,10) : null;
+    try{
+      await apiUpdateEventDates({ id: parseInt(id), start: start, end: end });
+      // actualiza visualmente si necesitas, sino ya se ve el cambio
+    }catch(e){
+      alert('No se pudo actualizar la fecha: ' + (e.error || JSON.stringify(e)));
+      info.revert(); // revertir solo si falla la actualización
+    }
+  },
+
+  eventClick: function(info){
+    // abrir modal para editar: buscamos la tarea en cache (si no está, la cargamos)
+    const id = info.event.id;
+    const t = tasksCache.find(x => String(x.id) === String(id));
+    if (t) openTaskModal(t);
+    else {
+      // fallback: intentar obtener a través del API (no tenemos endpoint GET /api/events/<id>, así que recargamos rango)
+      calendar.refetchEvents();
+    }
+  },
+
+  // Nuevo: manejo del drop para tareas arrastradas desde la lista lateral
+  drop: async function(info) {
+    const taskIdFromTransfer = info.jsEvent.dataTransfer.getData('text/plain');
+    const id = taskIdFromTransfer !== '' ? taskIdFromTransfer : (info.draggedEl?.dataset?.id || null);
+    if (!id) return;
+
+    const startDate = info.date.toISOString().slice(0, 10);
+
+    try {
+      await apiUpdateEventDates({ id: parseInt(id), start: startDate, end: null });
+      calendar.refetchEvents();
+      renderSidebar();
+    } catch (e) {
+      alert('Error asignando fecha a tarea: ' + (e.error || JSON.stringify(e)));
+    }
+  },
+});
+
+calendar.render();
+
+
+/* =================== SIDEBAR RENDER Y FILTRADO =================== */
+const sidebarList = document.getElementById('task-list');
+const searchInput = document.getElementById('task-search');
+const filterStatus = document.getElementById('filter-status');
+const filterPriority = document.getElementById('filter-priority');
+const filterTag = document.getElementById('filter-tag');
+const tagsDatalist = document.getElementById('tags-list');
+
+function getAllTagsFromCache(){
+  const set = new Map();
+  tasksCache.forEach(t => { if (t.tag) set.set(t.tag, t.tagColor || '#e6f7f0'); });
+  return Array.from(set.entries()).map(([tag,color])=>({tag,color}));
+}
+
+function renderSidebar(){
+  // poblar datalist
+  tagsDatalist.innerHTML = '';
+  getAllTagsFromCache().forEach(({tag,color}) => {
+    const opt = document.createElement('option'); opt.value = tag; tagsDatalist.appendChild(opt);
+  });
+
+  let items = [...tasksCache];
+  // filtros cliente
+  const q = searchInput.value.trim().toLowerCase();
+  if (q) items = items.filter(t => (t.title||'').toLowerCase().includes(q) || (t.tag||'').toLowerCase().includes(q));
+  const status = filterStatus.value;
+  if (status === 'pending') items = items.filter(t => !t.completed);
+  if (status === 'completed') items = items.filter(t => t.completed);
+  const pr = filterPriority.value;
+  if (pr !== 'any') items = items.filter(t => String(t.priority) === pr);
+  const tagVal = filterTag.value.trim();
+  if (tagVal) items = items.filter(t => (t.tag||'').toLowerCase() === tagVal.toLowerCase());
+
+  // Orden por prioridad y fecha
+  items.sort((a,b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    if (a.start && b.start) return new Date(a.start) - new Date(b.start);
+    return (a.title||'').localeCompare(b.title||'');
+  });
+
+  sidebarList.innerHTML = '';
+  items.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'task-card';
+    div.dataset.id = t.id;
+    div.setAttribute('draggable', 'true'); // Hacer draggable
+
+    const left = document.createElement('div');
+    left.style.display = 'flex'; 
+    left.style.alignItems = 'center';
+
+    const stripe = document.createElement('div');
+    stripe.className = 'priority-stripe ' + (t.priority==1?'p-high':t.priority==2?'p-medium':'p-low');
+    stripe.style.marginRight='8px';
+
+    const info = document.createElement('div');
+    info.className = 'task-info';
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.textContent = t.title + (t.completed ? ' (✓)' : '');
+
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = t.start + (t.end ? ' → ' + t.end : '');
+    meta.appendChild(dateSpan);
+
+    if (t.tag) {
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill';
+      pill.textContent = t.tag;
+      if (t.tagColor) { 
+        pill.style.background = t.tagColor; 
+        pill.style.color = '#06121a'; 
+      }
+      meta.appendChild(pill);
+    }
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    left.appendChild(stripe);
+    left.appendChild(info);
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.flexDirection = 'column';
+    actions.style.gap = '6px';
+
+    const btnEdit = document.createElement('button');
+    btnEdit.textContent = '✏️';
+    btnEdit.title = 'Editar';
+
+    const btnComplete = document.createElement('button');
+    btnComplete.textContent = t.completed ? '↺' : '✅';
+    btnComplete.title = t.completed ? 'Marcar Pendiente' : 'Completar';
+
+    const btnDelete = document.createElement('button');
+    btnDelete.textContent = '🗑️';
+    btnDelete.title = 'Eliminar';
+
+    actions.appendChild(btnEdit);
+    actions.appendChild(btnComplete);
+    actions.appendChild(btnDelete);
+
+    div.appendChild(left);
+    div.appendChild(actions);
+    sidebarList.appendChild(div);
+
+    // Hacer draggable pasando id
+    div.addEventListener('dragstart', (ev) => {
+      ev.dataTransfer.setData('text/plain', t.id);
+      ev.dataTransfer.effectAllowed = 'move';
+    });
+
+    // Handlers botones
+    btnEdit.addEventListener('click', () => openTaskModal(t));
+    btnComplete.addEventListener('click', async () => {
+      try {
+        if (!t.completed) {
+          await apiCompleteEvent(t.id);
+        } else {
+          await apiEditEvent(t.id, { title: t.title, start: t.start, end: t.end || null, priority: t.priority, tag: t.tag, completed: false });
+        }
+        calendar.refetchEvents();
+      } catch(e) {
+        alert('No se pudo actualizar estado: ' + (e.error || JSON.stringify(e)));
+      }
+    });
+    btnDelete.addEventListener('click', () => { openDeleteConfirm(t.id); });
+  });
+
+  // Drag & drop reorder con SortableJS (solo heurística visual)
+  if (!sidebarList._sortable) {
+  sidebarList._sortable = Sortable.create(sidebarList, {
+    animation: 150,
+    delay: 200,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    forceFallback: true,  // <- Prueba a habilitar para mejorar soporte móvil
+    onEnd: function(evt) {
+      const movedId = parseInt(evt.item.dataset.id);
+      const newIndex = evt.newIndex;
+      const total = sidebarList.children.length;
+      const threshold = Math.ceil(total / 3);
+      const t = tasksCache.find(x => x.id === movedId);
+      if (t) {
+        const newPriority = (newIndex < threshold) ? 1 : (newIndex < 2 * threshold ? 2 : 3);
+        apiEditEvent(t.id, { title: t.title, start: t.start, end: t.end || null, priority: newPriority, tag: t.tag })
+          .then(() => calendar.refetchEvents())
+          .catch(e => console.error(e));
+      }
+    }
+  });
+}
+
+
+}
+
+
+// Filtrado botones
+document.getElementById('btn-filter-clear').addEventListener('click', () => renderSidebar());
+document.getElementById('btn-reset-filters').addEventListener('click', () => {
+  searchInput.value = '';
+  filterStatus.value = 'all';
+  filterPriority.value = 'any';
+  filterTag.value = '';
+  renderSidebar();
+});
+searchInput.addEventListener('input', () => renderSidebar());
+
+// Toggle historial
+const historyToggle = document.getElementById('history-toggle');
+let historyShown = false;
+historyToggle.addEventListener('click', () => {
+  historyShown = !historyShown;
+  filterStatus.value = historyShown ? 'completed' : 'pending';
+  historyToggle.textContent = historyShown ? 'Volver a pendientes' : 'Historial';
+  renderSidebar();
+});
+
+
+/* =================== MODAL: crear/editar (con subtareas + rrule) =================== */
+const taskModal = document.getElementById('taskModal');
+const deleteModal = document.getElementById('deleteConfirmModal');
+let currentEditingId = null;
+let taskToDeleteId = null;
+
+function openTaskModal(data=null){
+  currentEditingId = data && data.id ? data.id : null;
+  document.getElementById('taskModalTitle').textContent = currentEditingId ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('taskId').value = currentEditingId || '';
+  document.getElementById('title').value = data && data.title ? data.title : '';
+  document.getElementById('tag').value = data && data.tag ? data.tag : '';
+  document.getElementById('start').value = data && data.start ? data.start : todayStr(0);
+  document.getElementById('end').value = data && data.end ? data.end : '';
+  document.getElementById('priority').value = data && data.priority ? data.priority : 2;
+  document.getElementById('completed').checked = data && data.completed ? true : false;
+  document.getElementById('tagColor').value = data && data.tagColor ? data.tagColor : '#e6f7f0';
+
+  // --- Recurrencia ---
+  let recurrenceType = '';
+  const rrule = data && data.rruleText ? data.rruleText.trim().toUpperCase() : '';
+  if (rrule.startsWith('FREQ=DAILY')) {
+    recurrenceType = 'daily';
+  } else if (rrule.startsWith('FREQ=WEEKLY')) {
+    recurrenceType = 'weekly';
+  } else if (rrule.startsWith('FREQ=MONTHLY')) {
+    recurrenceType = 'monthly';
+  } else if (rrule) {
+    recurrenceType = 'custom';
+  } else {
+    recurrenceType = '';
+  }
+  document.getElementById('recurrenceType').value = recurrenceType;
+  document.getElementById('rruleText').value = rrule;
+
+  // --- Subtareas ---
+  const subtasksContainer = document.getElementById('subtasks');
+  subtasksContainer.innerHTML = '';
+  const subtasks = data && data.subtasks ? data.subtasks : [];
+  subtasks.forEach(s => {
+    addSubtaskElement(s.text, s.done, s.id);
+  });
+
+  // Abrir modal
+  taskModal.classList.add('active');
+  taskModal.setAttribute('aria-hidden','false');
+  setTimeout(()=> document.getElementById('title').focus(), 150);
+}
+
+document.getElementById('recurrenceType').addEventListener('change', (e) => {
+  const val = e.target.value;
+  let rrule = '';
+  if (val === 'daily') {
+    rrule = 'FREQ=DAILY';
+  } else if (val === 'weekly') {
+    rrule = 'FREQ=WEEKLY;BYDAY=MO';      // Por defecto solo lunes, puedes personalizar
+  } else if (val === 'monthly') {
+    rrule = 'FREQ=MONTHLY';
+  } else if (val === '') {
+    rrule = '';
+  } // Si es 'custom', deja que el usuario escriba manualmente la RRULE
+  // Solo actualiza si NO es custom
+  if (val !== 'custom') {
+    document.getElementById('rruleText').value = rrule;
+  }
+});
+
+
+document.getElementById('cancelTaskBtn').addEventListener('click', () => {
+  taskModal.classList.remove('active'); taskModal.setAttribute('aria-hidden','true');
+});
+
+/* Subtask helpers */
+function addSubtaskElement(text='', done=false, id=null){
+  const container = document.getElementById('subtasks');
+  const subId = id || Math.floor(Math.random()*1000000);
+  const row = document.createElement('div'); row.className='subtask-item'; row.dataset.id = subId;
+  row.style.display = 'flex'; row.style.alignItems = 'center'; row.style.gap = '8px';
+  const chk = document.createElement('input'); chk.type='checkbox'; chk.checked = !!done;
+  const span = document.createElement('input'); span.value = text; span.style.flex='1'; span.style.padding='6px'; span.style.borderRadius='8px'; span.style.background='rgba(0,0,0,0.08)'; span.style.border='none';
+  const rm = document.createElement('button'); rm.textContent='✖'; rm.title='Quitar';
+  row.appendChild(chk); row.appendChild(span); row.appendChild(rm);
+  container.appendChild(row);
+  rm.addEventListener('click', ()=> row.remove());
+}
+
+document.getElementById('addSubtaskBtn').addEventListener('click', ()=> {
+  const text = document.getElementById('newSubtaskText').value.trim();
+  if (!text) return;
+  addSubtaskElement(text,false);
+  document.getElementById('newSubtaskText').value='';
+});
+
+/* Guardar tarea (crear o editar) */
+document.getElementById('saveTaskBtn').addEventListener('click', async ()=> {
+  const id = currentEditingId;
+  const title = document.getElementById('title').value.trim();
+  const start = document.getElementById('start').value;
+  const end = document.getElementById('end').value;
+  const priority = parseInt(document.getElementById('priority').value);
+  const tag = document.getElementById('tag').value.trim();
+  const tagColor = document.getElementById('tagColor').value;
+  const completed = document.getElementById('completed').checked;
+  const rruleText = document.getElementById('rruleText').value.trim();
+
+  // Validaciones
+  if (!title) { alert('El título es obligatorio'); return; }
+  if (end && new Date(end) < new Date(start)) { alert('La fecha fin no puede ser anterior a la fecha inicio'); return; }
+  if (![1,2,3].includes(priority)) { alert('Prioridad inválida'); return; }
+
+  // colectar subtareas
+  const subtasksEls = Array.from(document.getElementById('subtasks').children);
+  const subtasks = subtasksEls.map((el, idx) => {
+    const checkbox = el.querySelector('input[type=checkbox]');
+    const textInput = el.querySelector('input[type=text], input[type="text"], input[type="search"], input:not([type])');
+    const textVal = textInput ? textInput.value : '';
+    return ({ id: parseInt(el.dataset.id || (Date.now()+idx)), text: textVal, done: checkbox ? checkbox.checked : false });
+  });
+
+  const payload = {
+    title,
+    start,
+    end: end || null,
+    priority,
+    tag: tag || null,
+    completed: !!completed,
+    // campos adicionales enviados para futura persistencia si amplías el modelo en backend
+    tagColor: tagColor || null,
+    rruleText: rruleText || '',
+    subtasks: subtasks
+  };
+
+  try{
+    if (id) {
+      // editar usando PUT /api/events/<id>
+      await apiEditEvent(id, payload);
+    } else {
+      // crear usando POST /api/events
+      await apiCreateEvent(payload);
+    }
+    taskModal.classList.remove('active'); taskModal.setAttribute('aria-hidden','true');
+    // refrescar calendario y sidebar
+    calendar.refetchEvents();
+  }catch(e){
+    alert('Error guardando tarea: ' + (e.error || JSON.stringify(e)));
+  }
+});
+
+
+
+/* =================== Delete confirm =================== */
+function openDeleteConfirm(id){
+  taskToDeleteId = id;
+  deleteModal.classList.add('active'); deleteModal.setAttribute('aria-hidden','false');
+}
+document.getElementById('cancelDeleteBtn').addEventListener('click', ()=> {
+  deleteModal.classList.remove('active'); deleteModal.setAttribute('aria-hidden','true'); taskToDeleteId=null;
+});
+document.getElementById('confirmDeleteBtn').addEventListener('click', async ()=> {
+  if (!taskToDeleteId) return;
+  try{
+    await apiDeleteEvent(taskToDeleteId);
+    deleteModal.classList.remove('active'); deleteModal.setAttribute('aria-hidden','true');
+    taskToDeleteId = null;
+    calendar.refetchEvents();
+  }catch(e){
+    alert('No se pudo eliminar la tarea: ' + (e.error || JSON.stringify(e)));
+  }
+});
+
+/* =================== BOTON + abrir modal =================== */
+document.getElementById('add-task-btn').addEventListener('click', ()=> openTaskModal(null));
+
+/* =================== Inicializar render */
+renderSidebar();
+
+/* =================== Notificaciones (demo) =================== */
+function maybeScheduleNotification(){
+  // Demo: si hay una tarea con fecha de hoy, lanzar notificación (no garantizado)
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') Notification.requestPermission();
+  const today = todayStr(0);
+  const soon = tasksCache.find(t => !t.completed && t.start === today);
+  if (soon && Notification.permission === 'granted') {
+    navigator.serviceWorker?.ready.then(reg => {
+      reg.showNotification('Tarea hoy: ' + soon.title, { body: soon.tag || '', badge: '', icon: '' });
+    });
+  }
+}
+
+/* =================== Service Worker registro (para notificaciones locales) =================== */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').then(reg => {
+    console.log('SW registrado', reg);
+  }).catch(e => console.warn('SW registro fallo', e));
+}
+
+/* Cerrar modales al click fuera */
+document.querySelectorAll('.custom-modal').forEach(modal => {
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      modal.classList.remove('active');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+  });
+});
+
+
+</script>
+{% endblock %}

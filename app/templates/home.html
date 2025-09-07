@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Bienvenido | Dashboard Productividad{% endblock %}
+{% block content %}
+
+
+
+<section class="home-hero">
+  <h1>¡Bienvenido a tu Dashboard de Productividad!</h1>
+  <p>{{ resumen }}</p>
+</section>
+
+{% if current_user.is_authenticated %}
+<section class="user-summary">
+  <h2>Tu Resumen Rápido</h2>
+  <ul>
+    <li>Tareas: <strong>{{ tareas_info or "0/0" }}</strong></li>
+    <li>Próximos eventos: <strong>{{ proximos_eventos or 0 }}</strong></li>
+    <li>Metas: <strong>{{ metas_info or "0/0" }}</strong></li>
+  </ul>
+</section>
+
+
+
+{% endif %}
+
+<section class="ultimos-cambios">
+  <h2>📝 Últimos cambios</h2>
+  <ul>
+    {% for c in cambios %}
+      <li><b>{{ c.fecha }}</b>: {{ c.desc }}</li>
+    {% else %}
+      <li>No hay cambios recientes.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section class="consejo-rapido">
+  <h2>💡 Consejo automático</h2>
+  <blockquote>{{ consejo }}</blockquote>
+</section>
+
+<footer>
+  <p>© 2025 Tu Dashboard de Productividad | Contacto: info@tudominio.com</p>
+</footer>
+
+{% endblock %}

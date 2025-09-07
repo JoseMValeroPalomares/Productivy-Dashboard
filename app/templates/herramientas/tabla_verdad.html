@@ -1,0 +1,329 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Generador y Analizador de Tablas de Verdad{% endblock %}
+
+{% block extrastyle %}
+<style>
+   body {
+    background: linear-gradient(120deg,#222c49 15%,#36e7d9 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #e2fffa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .container {
+    margin-top: 38px;
+    background: rgba(29,40,66,0.96);
+    border-radius: 18px;
+    box-shadow: 0 8px 36px #3af3e855, 0 2px 11px #13232849;
+    max-width: 570px;
+    width: 97vw;
+    padding: 33px 23px 28px;
+    min-width: 260px;
+    animation: fadein 1s;
+  }
+  h2 {
+    text-align: center;
+    color: #49ffcc;
+    font-size: 1.6em;
+    text-shadow: 0 2.5px 12px #122a39CC;
+    margin-bottom: 23px;
+    letter-spacing: 1.35px;
+  }
+  label {
+    color: #a3f3ef;
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-bottom: 7px;
+    display: inline-block;
+  }
+  input[type="text"], textarea {
+    border-radius: 8px;
+    border: 1.2px solid #30ccc4;
+    font-size: 1.08em;
+    font-family: inherit;
+    padding: 10px 14px;
+    background: #18364c;
+    color: #39ffe7;
+    outline: none;
+    box-shadow: 0 1px 6px #44ffed30;
+    margin-bottom: 12px;
+    transition: border 0.15s;
+  }
+  input[type="text"] { width: 88%; min-width: 120px; margin-right: 0.5em;}
+  textarea { width:98%; min-height: 106px; resize:vertical; }
+  input[type="text"]:focus, textarea:focus { border-color: #6ffdbe; }
+  button {
+    background: linear-gradient(90deg,#2ffcbe 28%,#355eda 80%);
+    color: #113c39;
+    font-weight: bold;
+    border: none;
+    border-radius: 9px;
+    font-size: 1.09em;
+    letter-spacing: .7px;
+    padding: 12px 32px;
+    margin-bottom: 11px;
+    margin-top: 6px;
+    cursor: pointer;
+    box-shadow: 0 2.3px 14px #3af3e82b;
+    transition: filter 0.1s;
+  }
+  button:hover { filter: brightness(1.06); }
+  .tab-btns {
+    display:flex; gap: 12px; margin-bottom:18px; justify-content: center;
+  }
+  .tab-btn {
+    background: #182952; color: #36ffde; border: none;
+    font-size:1em; font-family:inherit; font-weight: bold;
+    border-radius: 8px;
+    padding: 8.5px 26px;
+    cursor: pointer; transition:.15s;
+  }
+  .tab-btn.active,
+  .tab-btn:focus { background: linear-gradient(90deg,#2ffcbe 40%,#355eda 95%); color: #222c42; }
+  .tab-content { display:none;}
+  .tab-content.active { display:block; animation: fadein 0.7s;}
+  .result-area {
+    margin-top: 24px;
+    min-height: 40px;
+    background: #18243b;
+    border-radius: 9px;
+    padding: 20px 12px 13px 12px;
+    box-shadow: 0 2px 18px #3af3e840;
+    animation: fadein 0.6s;
+    overflow-x: auto;
+    font-size: 1.08em;
+    text-align: center;
+    word-break: break-word;
+  }
+  table {
+    border-collapse: collapse;
+    margin: 0 auto;
+    margin-top: 9px;
+    min-width: 210px;
+    margin-bottom: 10px;
+  }
+  th, td {
+    font-family:inherit;
+    text-align: center;
+    padding: 7px 15px;
+    font-size: 1.07em;
+    letter-spacing: 0.8px;
+  }
+  th {
+    background: linear-gradient(90deg,#59fff1 50%,#4061ef 100%);
+    color: #17384b;
+    border-bottom: 2.2px solid #3aeef1;
+    font-weight: bold; font-size: 1.11em;
+  }
+  td {
+    background: #212b3e;
+    color: #76ffee;
+    border-bottom: 1.2px solid #262b55;
+    font-weight: bold;
+  }
+  tr:last-child td { border-bottom:none; }
+  .ok { color: #40f89a; font-weight: bold;}
+  .error { color: #ff6e7f; font-weight:bold;}
+  .f-simp { color:#ffe63a; font-weight:bold; }
+  .f-min { color:#21ffd8; }
+  .label-opc { color:#caf8e7; font-size:.99em;}
+  .ejemplo { font-size:.98em; color:#bdecfd; margin-top: 7px; }
+  @keyframes fadein { from {opacity: 0;} to {opacity: 1;} }
+  @media (max-width: 600px) {
+    .container { padding: 2vw; }
+    input[type="text"], textarea { width: 97%; }
+    th, td { padding: 2.5vw 2vw; font-size: 1em;}
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Tablas de Verdad y Obtención de Función</h2>
+  <div class="tab-btns">
+    <button class="tab-btn active" onclick="showTab(0)">🧮 Expresión → Tabla</button>
+    <button class="tab-btn" onclick="showTab(1)">🗒️ Tabla → Función</button>
+  </div>
+
+  <!-- Tab 0: Expresión → Tabla -->
+  <div class="tab-content active">
+    <label for="expr">Expresión booleana (usa variables a-z, operadores <code>&amp;&amp; || ! ( )</code>)</label><br>
+    <input id="expr" type="text" value="a && b || !c" autocomplete="off" onkeydown="if(event.key==='Enter'){tabla();event.preventDefault()}">
+    <button onclick="tabla()">Generar tabla</button>
+    <div class="result-area" id="table"></div>
+    <div class="ejemplo">
+      Ejemplo: <code>a &amp;&amp; b || !c</code> <span style="color:#ffe579;">Valores 1 = verdadero, 0 = falso</span>
+    </div>
+  </div>
+
+  <!-- Tab 1: Tabla → Función -->
+  <div class="tab-content">
+    <label>Introduce tu tabla de verdad (<b>columnas separadas por espacio, cada línea un caso</b>):</label>
+    <textarea id="custom_table" placeholder="Ejemplo (a b c out):&#10;0 0 0 1&#10;0 0 1 0&#10;..."></textarea>
+    <label class="label-opc">Variables (orden):</label>
+    <input id="vars" type="text" value="a b c">
+    <button onclick="tabla2func()">Obtener función</button>
+    <div class="result-area" id="func-out"></div>
+    <div class="ejemplo">
+      Ejemplo:<br>
+      <code>a b c out<br>0 0 0 1<br>0 0 1 0<br>...</code><br>
+      Variables separadas por espacio.<br>
+      Admite hasta 5 variables para simplificar.
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+// --------- Pestañas
+function showTab(n) {
+  document.querySelectorAll('.tab-btn').forEach((b, i)=>b.classList.toggle('active', i===n));
+  document.querySelectorAll('.tab-content').forEach((d,i)=>d.classList.toggle('active',i===n));
+}
+
+// ---------- Expresión → Tabla --------------
+function extraeVariables(exp) {
+  const m = exp.match(/[a-z]/g);
+  return m ? Array.from(new Set(m)) : [];
+}
+function tabla(){
+    const exp = document.getElementById('expr').value.trim();
+    const vars = extraeVariables(exp);
+    const area = document.getElementById('table');
+    if(exp.length==0) {
+      area.innerHTML = "<span class='error'>Introduce una expresión booleana.</span>"; return;
+    }
+    if(vars.length==0){
+      area.innerHTML = "<span class='error'>Introduce al menos una variable (a-z).</span>"; return;
+    }
+    if(vars.length > 7) {
+      area.innerHTML = "<span class='error'>Máximo 7 variables por claridad.</span>"; return;
+    }
+    let html="<table><tr>"+vars.map(x=>`<th>${x}</th>`).join('')+"<th>Resultado</th></tr>";
+    let n=vars.length;
+    for(let i=0; i < (1<<n); i++){
+        let vals={};
+        for(let j=0;j<n;j++) vals[vars[j]] = Boolean((i >> (n-1-j)) & 1);
+        let exprEval = exp;
+        vars.forEach(v=> exprEval = exprEval.replace(new RegExp("\\b"+v+"\\b","g"), vals[v]));
+        try {
+          let res = eval(exprEval);
+          html+="<tr>"+vars.map(v=>"<td>"+(vals[v]?1:0)+"</td>").join('')+"<td>"+(res?'<span class="ok">1</span>':'<span style=\"color:#fff;\">0</span>')+"</td></tr>";
+        } catch(e){
+          area.innerHTML = "<span class='error'>Error en la expresión.</span>"; return;
+        }
+    }
+    html+="</table>";
+    area.innerHTML = html;
+}
+// Calcula al cargar por defecto
+window.onload=()=>tabla();
+
+// ---------- Tabla → Función --------------
+// Obtiene la función booleana DNF y simplificada desde una tabla de verdad introducida manualmente
+function tabla2func() {
+  let area = document.getElementById('func-out');
+  let tab = document.getElementById('custom_table').value.trim().replaceAll('\r\n','\n');
+  let vs = document.getElementById('vars').value.trim().split(/\s+/);
+  if(tab.length==0) { area.innerHTML = "<span class='error'>Introduce tu tabla de verdad.</span>"; return; }
+  if(vs.length==0 || vs.join('').length===0) { area.innerHTML = "<span class='error'>Indica las variables.</span>"; return;}
+  let lines = tab.split('\n').filter(l=>l.trim().length>0 && !l.startsWith('#'));
+  let rows = [];
+  for(let ln of lines) {
+    let parts = ln.trim().split(/\s+/); // columnas separadas por espacio
+    if(parts.length !== vs.length+1) {area.innerHTML = `<span class='error'>Formato de fila: ${ln}</span>`; return;}
+    let inputs = parts.slice(0,vs.length).map(Number);
+    if(inputs.some(x=>(x!==0&&x!==1))) {area.innerHTML=`<span class='error'>Solo 0 o 1 en datos: ${ln}</span>`; return;}
+    let out = Number(parts[vs.length]);
+    if(out!==0 && out!==1) {area.innerHTML=`<span class='error'>El output debe ser 0/1: ${ln}</span>`; return;}
+    rows.push({inputs, out});
+  }
+  // Mostrar tabla que se ha leído:
+  let html = `<table><tr>${vs.map(x=>`<th>${x}</th>`).join("")}<th>Salida</th></tr>`
+    + rows.map(r=>"<tr>"+r.inputs.map(v=>`<td>${v}</td>`).join("")+`<td>${r.out}</td></tr>`).join("") + "</table>";
+
+  // DNF (forma normal disyuntiva)
+  let minterms = rows.filter(r=>r.out===1);
+  if(minterms.length==0) {
+    html+=`<br><b class="ok">Función constante: 0</b>`;
+    area.innerHTML = html; return;
+  }
+  if(minterms.length===rows.length) {
+    html+=`<br><b class="ok">Función constante: 1</b>`;
+    area.innerHTML = html; return;
+  }
+
+  // DNF sin simplificar
+  let dnf = minterms.map(r =>
+      r.inputs.map((v,i)=>v?vs[i]:`!${vs[i]}`).join(' && ')
+    ).join(' || ');
+  html += `<br><b>F. booleana (sin simplificar, DNF):</b><br><span class="f-min">${dnf.length ? dnf : "—"}</span>`;
+
+  // SIMPLIFICACIÓN por Quine-McCluskey (solo si <=5 vars por rendimiento)
+  let fSimple = "";
+  if(vs.length<=5) {
+    try {
+      fSimple = simplificaDNF(vs, minterms.map(r=>r.inputs));
+    } catch(e){ fSimple="No se pudo simplificar"; }
+    html += `<br><b>F. simplificada:</b><br><span class="f-simp">${fSimple}</span>`;
+  } else {
+    html += `<br><b>(Demasiadas variables para simplificar automáticamente)</b>`;
+  }
+  area.innerHTML = html;
+}
+
+/* --- Quine-McCluskey básico para simplificar la DNF --- */
+function simplificaDNF(vars, minterms) {
+  function diff(a,b) {
+    let n=0, ix=-1;
+    for(let i=0;i<a.length;i++) if(a[i]!=b[i]){ n++; ix=i;}
+    return n==1 ? ix : -1;
+  }
+  function combine(ms) {
+    let used = Array(ms.length).fill(false);
+    let next = [], memo = {};
+    for(let i=0;i<ms.length;i++)
+      for(let j=i+1;j<ms.length;j++) {
+        let d = diff(ms[i],ms[j]);
+        if(d>=0) {
+          let comb = ms[i].slice();
+          comb[d]='-';
+          let key = comb.join('');
+          if(!memo[key]) { next.push(comb); memo[key]=1;}
+          used[i]=used[j]=true;
+        }
+      }
+    return {next: next.concat(ms.filter((m,i)=>!used[i])), any: next.length>0};
+  }
+  // Paso 1: generar prime implicants
+  let terms = minterms.map(x=>x.slice());
+  let prev = terms;
+  let allPrimes = [];
+  while(true){
+    let {next,any}=combine(prev);
+    if(!any) { allPrimes=next; break;}
+    prev=next;
+  }
+  // Paso 2: tabla de cobertura
+  let covers = Array(minterms.length).fill(0).map(_=>[]);
+  for(let i=0;i<minterms.length;i++)
+    for(let p of allPrimes)
+      if(matchPrime(minterms[i],p)) covers[i].push(primeStr(vars,p));
+  let implicants = [];
+  // Esencial: los que cubren sin ambigüedad algún minterm
+  for(let i=0;i<minterms.length;i++)
+    if(covers[i].length==1 && !implicants.includes(covers[i][0])) implicants.push(covers[i][0]);
+  // Si quedan terminos sin cubrir, añadir los que mejor cubran (greedy: al menos uno)
+  if(implicants.length==0)
+    implicants.push(primeStr(vars,allPrimes[0]));
+  return implicants.join(' || ');
+  function matchPrime(m,p) { for(let i=0;i<m.length;i++) if(p[i]!=='-' && m[i]!=p[i]) return false; return true; }
+  function primeStr(vs,p){ return p.map((x,i)=>x==='-'?'':(x?vs[i]:`!${vs[i]}`)).filter(Boolean).join(' && ')||'1'; }
+}
+</script>
+{% endblock %}

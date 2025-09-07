@@ -1,0 +1,257 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Calculadora de Determinantes{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg, #22294a 20%, #39f3c3 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #eafffa;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .container {
+    background: rgba(26,34,53,0.98);
+    border-radius: 19px;
+    margin: 40px auto 0 auto;
+    box-shadow: 0 8px 30px #39f3c433, 0 1.5px 7px #3fc1d455;
+    max-width: 400px;
+    width: 96vw;
+    padding: 32px 20px 28px;
+    min-width: 260px;
+  }
+  h2 {
+    text-align: center;
+    color: #53ffd2;
+    font-size: 1.6em;
+    text-shadow: 0 2px 8px #0008;
+    margin-top: 0;
+    margin-bottom: 26px;
+    letter-spacing: 1.2px;
+  }
+  label {
+    color: #92f6fc;
+    font-weight: bold;
+    font-size: 1.09em;
+    margin-right: 10px;
+  }
+  select, button {
+    font-family: inherit;
+    font-size: 1em;
+    border-radius: 7px;
+    padding: 7px 12px;
+    margin: 6px 0 6px 0;
+    border: none;
+    outline: none;
+    box-shadow: 0 1px 6px #46f7c16a;
+  }
+  select {
+    background: #19304c;
+    color: #53ffd2;
+    border: 1.4px solid #266b67;
+    min-width: 80px;
+  }
+  select:focus {
+    border-color: #5fffd1;
+  }
+  button {
+    background: linear-gradient(90deg,#35ffd4 10%,#3ca0ff 90%);
+    color: #1e213a;
+    font-weight: bold;
+    font-size: 1.12em;
+    letter-spacing: 0.6px;
+    margin-top: 18px;
+    margin-bottom: 10px;
+    width: 95%;
+    cursor: pointer;
+    transition: filter 0.14s;
+    box-shadow: 0 2px 11px #528fd33a;
+  }
+  button:hover {
+    filter: brightness(1.09);
+  }
+  table {
+    margin: 18px auto 12px auto;
+    border-spacing: 8px 8px;
+  }
+  td { padding: 0; }
+  input[type="number"] {
+    background: #10193c;
+    color: #36ffd9;
+    border: 1.5px solid #2980b9;
+    border-radius: 7px;
+    font-size: 1.135em;
+    width: 49px;
+    height: 38px;
+    text-align: center;
+    box-shadow: 0 2px 7px #18265a33;
+    transition: border 0.17s, box-shadow 0.15s, background 0.17s;
+    margin: 0;
+    font-family: inherit;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]:focus {
+    border-color: #5fffd1;
+    background: #1c3355;
+    box-shadow: 0 4px 10px #34d1eb50;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .result-card {
+    background: #202b46f7;
+    color: #e1fff7;
+    border-radius: 11px;
+    margin-top: 25px;
+    padding: 16px 13px 15px;
+    box-shadow: 0 4px 26px #39f3c42c;
+    font-size: 1.12em;
+    font-weight: bold;
+    word-break: break-word;
+    min-height: 43px;
+    animation: fade-in 0.7s;
+    letter-spacing: 0.3px;
+  }
+  .determinant {
+    color: #49ff9b;
+    font-size: 1.25em;
+  }
+  .explicacion {
+    color: #fffd77;
+    font-size: 0.97em;
+    font-weight: normal;
+    margin-top: 13px;
+    white-space: pre-line;
+  }
+  .error {
+    color: #ff857f;
+    font-weight: bold;
+  }
+  pre {
+    background: #232a3f;
+    border-radius: 5px;
+    padding: 7px 12px;
+    color: #61fadc;
+    font-size: 1em;
+    margin: 5px 0 0 16px;
+    display: inline-block;
+    box-shadow: 0 1px 5px #39f3c42f;
+  }
+  @keyframes fade-in { from { opacity: 0;} to {opacity: 1;} }
+  @media (max-width: 480px) {
+    .container { padding: 2vw 2vw 5vw 2vw; }
+    table input[type="number"] { width: 31vw; min-width: 31px; height: 32px;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Calculadora de Determinantes</h2>
+  <form id="form" autocomplete="off" onsubmit="calcDet(); return false;">
+    <label for="size">Tamaño:</label>
+    <select id="size" onchange="makeMatrix()">
+      <option value="2">2x2</option>
+      <option value="3">3x3</option>
+      <option value="4">4x4</option>
+    </select>
+    <div id="matrix"></div>
+    <button type="submit">Calcular determinante</button>
+  </form>
+  <div id="resultado" class="result-card"></div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+function makeMatrix(){
+    let n = +document.getElementById('size').value;
+    let html = '<table>';
+    for(let i=0;i<n;i++){
+        html+='<tr>';
+        for(let j=0;j<n;j++)
+            html+=`<td><input type="number" id="m${i}${j}" value="0" /></td>`;
+        html+='</tr>';
+    }
+    html+='</table>';
+    document.getElementById('matrix').innerHTML = html;
+}
+// Recoge matriz desde los inputs
+function getMatriz(n){
+    let m=[];
+    for(let i=0;i<n;i++){
+        let row = [];
+        for(let j=0;j<n;j++) {
+            const val = document.getElementById('m'+i+j).value;
+            row.push(val === "" ? 0 : Number(val));
+        }
+        m.push(row);
+    }
+    return m;
+}
+// Calcula determinante para matriz nxn (hasta 4)
+function det(m){
+    let n=m.length;
+    if(n==2) return m[0][0]*m[1][1]-m[0][1]*m[1][0];
+    if(n==3)
+        return m[0][0]*m[1][1]*m[2][2]
+            + m[0][1]*m[1][2]*m[2][0]
+            + m[0][2]*m[1][0]*m[2][1]
+            - m[0][2]*m[1][1]*m[2][0]
+            - m[0][1]*m[1][0]*m[2][2]
+            - m[0][0]*m[1][2]*m[2][1];
+    if(n==4){
+        let res=0;
+        for(let k=0;k<4;k++){
+            let sub = m.slice(1).map(r => r.filter((_,j)=>j!=k));
+            res += (k%2==0 ? 1 : -1)*m[0][k]*det(sub);
+        }
+        return res;
+    }
+    return NaN;
+}
+// Explica, para n=4, la expansión por cofactores
+function detExplicacion(m){
+    let n=m.length, exp="";
+    if(n<=3) return '';
+    exp+="<span class='explicacion'><b>Expansión por cofactores (primera fila):</b><br>";
+    for(let k=0;k<4;k++){
+        let fac = (k%2==0 ? "+" : "-");
+        let sub = m.slice(1).map(r => r.filter((_,j)=>j!=k));
+        exp+=`${fac} (${m[0][k]}) × det( `;
+        exp+="<pre>"+sub.map(r=>r.join('\t')).join('\n')+"</pre> )<br>";
+    }
+    exp+="</span>";
+    return exp;
+}
+function calcDet(){
+    let n = +document.getElementById('size').value;
+    let m = getMatriz(n);
+    if(m.flat().some(v=>isNaN(v))) {
+      document.getElementById('resultado').innerHTML = "<span class='error'>Verifica que todos los elementos sean números válidos.</span>";
+      return;
+    }
+    let determinante = det(m);
+    let expl = detExplicacion(m);
+    document.getElementById('resultado').innerHTML =
+        `<span class="determinant">💡 Determinante: <b>${determinante}</b></span>`+(expl?("<hr>"+expl):"");
+}
+// Permite calcular con ENTER
+window.onload = function() {
+  makeMatrix();
+  document.querySelector("#matrix").addEventListener("keydown", function(e){
+    if(e.key==="Enter") {
+      e.preventDefault();
+      calcDet();
+    }
+  });
+}
+</script>
+{% endblock %}

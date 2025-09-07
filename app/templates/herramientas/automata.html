@@ -1,0 +1,186 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Simulador de Autómata Finito{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg,#23283e 30%,#48c6ef 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    margin: 0;
+  }
+  .container {
+    background: rgba(22, 24, 48, 0.97);
+    border-radius: 19px;
+    margin-top: 48px;
+    padding: 40px 24px 30px;
+    box-shadow: 0 10px 36px #1fd1ff30, 0 1.5px 6px #292e4477;
+    min-width: 310px;
+    max-width: 95vw;
+    width: 410px;
+  }
+  h2 {
+    color: #5ef7c5;
+    text-shadow: 0 2px 10px #0006;
+    text-align: center;
+    margin-bottom: 35px;
+    font-size: 2em;
+  }
+  label {
+    color: #e9ecef;
+    display: block;
+    margin-top: 13px;
+    margin-bottom: 3px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+  }
+  input[type="text"], input[type="button"], button {
+    background: #191a32;
+    color: #37f7ff;
+    border: none;
+    outline: none;
+    padding: 10px 10px;
+    border-radius: 7px;
+    margin-bottom: 5px;
+    font-size: 1em;
+    width: 97%;
+    font-family: inherit;
+    box-sizing: border-box;
+    margin-right: 5px;
+    transition: box-shadow 0.15s;
+  }
+  input:focus {
+    box-shadow: 0 0 5px #2deaff94;
+  }
+  .group {
+    display: flex;
+    flex-direction: column;
+  }
+  button {
+    margin: 18px auto 10px auto;
+    background: linear-gradient(90deg,#29ffc6 30%, #20e3b2,#1ebba3 82%);
+    color: #141622;
+    font-weight: bold;
+    font-size: 1.18em;
+    border-radius: 12px;
+    padding: 12px 0;
+    box-shadow: 0 2px 7px #11eedd28;
+    cursor: pointer;
+    width: 60%;
+    transition: filter 0.13s;
+    letter-spacing: 1px;
+  }
+  button:hover {
+    filter: brightness(1.06);
+  }
+  #autores {
+    background: #25265d;
+    color: #d3fff9;
+    border-radius: 10px;
+    margin-top: 24px;
+    padding: 22px 15px 18px;
+    min-height: 72px;
+    box-shadow: 0 2px 16px #11f8ff57;
+    font-size: 1.1em;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+    white-space: pre-line;
+    transition: background 0.27s;
+    text-shadow: 0 1.5px 6px #0009;
+    animation: fade-in 0.8s;
+  }
+  .accept { color: #38ff88; font-weight: bold; font-size: 1.15em;}
+  .reject { color: #ff536b; font-weight: bold; font-size: 1.13em;}
+  @keyframes fade-in { from { opacity: 0;} to { opacity: 1;} }
+  .inline { display: inline-block; margin-right: 3px;}
+  @media (max-width: 550px) {
+    .container { width: 97vw; padding: 2vw; }
+    h2 { font-size: 1.3em; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Simulador de Autómata Finito</h2>
+  <form id="autoForm" autocomplete="off" onsubmit="runAuto();return false;">
+    <div class="group">
+      <label>Estados (separados por coma):</label>
+      <input type="text" id="estados" value="{{ estados }}">
+    </div>
+    <div class="group">
+      <label>Alfabeto (separado por coma):</label>
+      <input type="text" id="alf" value="{{ alfabeto }}">
+    </div>
+    <div class="group">
+      <label>Transiciones (<span class="inline">q,simbolo=destino</span>, ej: <span class="inline">q0,0=q1;q1,1=q0</span>):</label>
+      <input type="text" id="trans" value="{{ transiciones }}">
+    </div>
+    <div class="group">
+      <label>Estado inicial:</label>
+      <input type="text" id="q0" value="{{ inicial }}">
+    </div>
+    <div class="group">
+      <label>Estados de aceptación:</label>
+      <input type="text" id="fin" value="{{ aceptacion }}">
+    </div>
+    <div class="group">
+      <label>Cadena a probar:</label>
+      <input type="text" id="word" value="{{ cadena }}" autocomplete="off">
+    </div>
+    <button type="submit">Simular</button>
+  </form>
+  <div id="autores"></div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+  function runAuto(){
+    let Q = document.getElementById('estados').value.split(',').map(e=>e.trim()).filter(e=>e),
+        Sigma = document.getElementById('alf').value.split(',').map(e=>e.trim()).filter(e=>e),
+        Traw = document.getElementById('trans').value.split(';').map(e=>e.trim()).filter(e=>e),
+        Q0 = document.getElementById('q0').value.trim(),
+        F = document.getElementById('fin').value.split(',').map(e=>e.trim()).filter(e=>e),
+        w = document.getElementById('word').value.trim();
+    let T={};
+    Traw.forEach(t=>{
+      let [from, rest]=t.split(',');
+      if(!rest) return;
+      let [s,to]=rest.split('=');
+      if(from && s && to)
+        T[from+'_'+s] = to;
+    });
+    let estado=Q0;
+    let visual = `🟢 <b>Estado inicial:</b> <span style="color:#ffe556">${Q0}</span><br><br>`;
+    let ok = true;
+    for(let i=0;i<w.length;i++){
+      let a = w[i];
+      let next = T[estado+'_'+a];
+      visual+=`<b>(${estado})</b> --<span style="color:#35ffd0"> ${a} </span>→ `;
+      if(!next) {
+        visual += `<span class="reject">❌ No hay transición para (${estado},${a})</span><br>`;
+        ok = false; break;
+      }
+      visual += `<b>${next}</b><br>`;
+      estado = next;
+    }
+    if(ok) {
+      if(F.includes(estado)) visual += `<br><span class="accept">✅ ¡Cadena aceptada! Estado final: ${estado}</span>`;
+      else visual += `<br><span class="reject">⛔ Cadena NO aceptada. Estado final: ${estado}</span>`;
+    } else {
+      visual += `<br><span class="reject">⛔ Cadena rechazada. Estado: ${estado}</span>`;
+    }
+    document.getElementById('autores').innerHTML = visual;
+  }
+  document.getElementById('word').addEventListener('keydown', function(e){
+    if(e.key==="Enter") { runAuto(); e.preventDefault();}
+  });
+  window.onload = () => runAuto();
+</script>
+{% endblock %}

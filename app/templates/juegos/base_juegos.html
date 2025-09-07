@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}Herramientas{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+
+  <style>
+    /* ------------ NAV INFERIOR Y SU ESTILO ------------ */
+    .main-bottom-nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 999;
+      background: #232a45ee;
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      box-shadow: 0 -5px 23px #34ffd784;
+      padding: 0;
+      border-top: 2px solid #39ffd7a0;
+      font-family: inherit;
+      gap: 0;
+    }
+    .nav-btn {
+      flex: 1 1 0px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      background: none;
+      border: none;
+      padding: 8.5px 0 7px 0;
+      color: #39ffd6;
+      font-weight: 600;
+      font-size: 1.09em;
+      outline: none;
+      cursor: pointer;
+      transition: background 0.13s, color 0.14s, box-shadow 0.15s, font-weight 0.10s;
+      letter-spacing: 0.5px;
+      box-shadow: none;
+    }
+    .nav-btn:hover, .nav-btn:focus {
+      color: #232b40;
+      background: linear-gradient(90deg,#45fadf 0,#467eff 100%);
+      box-shadow: 0 -1.5px 10px #45fadf7d;
+      font-weight: 700;
+    }
+    .nav-icon {
+      font-size: 1.37em;
+      display: block;
+      margin-bottom: 2px;
+      line-height: 1;
+    }
+    .nav-label {
+      font-size: 0.98em;
+      margin-top: 1px;
+      display: block;
+    }
+    @media (max-width: 600px) {
+      .main-bottom-nav { border-radius: 18px 18px 0 0; }
+      .nav-btn { font-size: 1.03em; padding: 9px 0 6.5px 0;}
+      .nav-label { font-size: 0.96em;}
+    }
+    body { padding-bottom: 60px; }
+    /* ------------ FIN NAV INFERIOR ------------ */
+  </style>
+
+  {% block extrastyle %}{% endblock %}
+</head>
+<body style="background:linear-gradient(125deg,#1f223c 10%,#38ffd2 100%); font-family:'Share Tech Mono',monospace; color:#edfaff; margin:0;">
+
+  {% block content %}
+  {# Contenido específico de cada página #}
+  {% endblock %}
+
+  <!-- NAV inferior común en todas las páginas -->
+  <nav class="main-bottom-nav" aria-label="Navegación inferior">
+    <a href="{{ url_for('main.home') }}" class="nav-btn" title="Inicio">
+      <span class="nav-icon"><i class="fa fa-home"></i></span>
+      <span class="nav-label">Inicio</span>
+    </a>
+    <a href="{{ url_for('main.juegos') }}" class="nav-btn" title="Herramientas">
+      <span class="nav-icon"><i class="fa fa-toolbox"></i></span>
+      <span class="nav-label">Juegos</span>
+    </a>
+  </nav>
+
+  {% block extrascripts %}{% endblock %}
+</body>
+</html>

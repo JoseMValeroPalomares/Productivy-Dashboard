@@ -1,0 +1,309 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Calculadora de Matrices{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg, #252a48 10%, #45fadf 90%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #eafffa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .container {
+    background: rgba(34,38,63,0.98);
+    border-radius: 18px;
+    margin: 46px auto 0 auto;
+    box-shadow: 0 8px 36px #45fadf22, 0 2px 11px #22335533;
+    max-width: 500px;
+    width: 96vw;
+    padding: 36px 20px 28px;
+    min-width: 270px;
+  }
+  h2 {
+    text-align: center;
+    color: #59ffd4;
+    font-size: 1.7em;
+    text-shadow: 0 2px 13px #0008;
+    margin-bottom: 28px;
+    letter-spacing: 1.5px;
+  }
+  label {
+    color: #93f6fd;
+    font-weight: bold;
+    font-size: 1.08em;
+    margin-right: 12px;
+  }
+  select, button {
+    font-family: inherit;
+    font-size: 1em;
+    border-radius: 7px;
+    padding: 8px 14px;
+    border: none;
+    outline: none;
+    margin: 8px 0 7px 0;
+    box-shadow: 0 1px 6px #46f7c16a;
+    background: #19304c;
+    color: #53ffd2;
+    min-width: 84px;
+    transition: border 0.15s;
+  }
+  select:focus {
+    border: 1.5px solid #38ffd2;
+  }
+  button {
+    background: linear-gradient(90deg,#36ffd0 10%,#2980ff 90%);
+    color: #21293b;
+    font-weight: bold;
+    font-size: 1.13em;
+    letter-spacing: 0.6px;
+    margin-top: 18px;
+    margin-bottom: 12px;
+    width: 98%;
+    cursor: pointer;
+    transition: filter 0.13s;
+    box-shadow: 0 2px 12px #49ffd233;
+  }
+  button:hover { filter: brightness(1.085);}
+  h3 {
+    margin: 17px 0 7px 0;
+    color: #29ffc2;
+    letter-spacing: 1px;
+  }
+  .mat-table {
+    margin: 2px auto 20px auto;
+    border-spacing: 7px 7px;
+  }
+  .mat-table td { padding: 0; }
+  input[type="number"] {
+    background: #101941;
+    color: #36ffd9;
+    border: 1.5px solid #2980b9;
+    border-radius: 6px;
+    font-size: 1.08em;
+    width: 43px;
+    min-width: 36px;
+    max-width: 70px;
+    height: 37px;
+    text-align: center;
+    box-shadow: 0 1.5px 6px #18265a37;
+    transition: border 0.15s, box-shadow 0.12s, background 0.11s;
+    margin: 0;
+    font-family: inherit;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  input[type="number"]:focus {
+    border-color: #79fed9;
+    background: #243668;
+    box-shadow: 0 4px 8px #52ffd158;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .mat-section {
+    margin-bottom: 20px;
+    animation: fade-in 0.7s;
+  }
+  .result-card {
+    background: #212c4d;
+    color: #e1fff7;
+    border-radius: 13px;
+    margin-top: 23px;
+    padding: 15px 13px 10px;
+    box-shadow: 0 2px 20px #49ffd255;
+    font-size: 1.12em;
+    font-weight: bold;
+    min-height: 36px;
+    letter-spacing: 0.4px;
+    animation: fade-in 0.7s;
+    word-break: break-word;
+    overflow-x: auto;
+  }
+  .error { color: #ff6c6c; font-weight: bold; }
+  .dat-info {
+    color: #ffe483;
+    font-size: .94em;
+  }
+  .mat-show {
+    margin-top: 14px;
+    margin-bottom: 2px;
+    display: inline-block;
+    background: #27386988;
+    padding: 6px 13px;
+    border-radius: 6px;
+    box-shadow: 0 1px 7px #9994;
+  }
+  table.resmat td { padding:4.5px;}
+  @keyframes fade-in { from { opacity: 0;} to {opacity: 1;} }
+  @media (max-width: 600px) {
+    .container { padding: 3vw 2vw;}
+    input[type="number"] { width: 22vw; min-width: 23px; height: 32px;}
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Calculadora de Matrices</h2>
+  <div class="dat-info">
+    Opera con matrices cuadradas de <b>cualquier tamaño</b> (hasta 8x8)<br>
+    Suma, resta, multiplicación, determinante, transpuesta e inversa.
+  </div>
+  <form id="form" autocomplete="off" onsubmit="calcular(); return false;">
+    <label for="size">Tamaño:</label>
+    <select name="size" id="size" onchange="renderMatrices()">
+      <option value="2">2x2</option>
+      <option value="3">3x3</option>
+      <option value="4">4x4</option>
+      <option value="5">5x5</option>
+      <option value="6">6x6</option>
+      <option value="7">7x7</option>
+      <option value="8">8x8</option>
+    </select>
+    <label for="operacion" style="margin-left:11px;">Operación:</label>
+    <select name="operacion" id="operacion" onchange="renderMatrices()">
+      <option value="sum">Suma</option>
+      <option value="resta">Resta</option>
+      <option value="mult">Multiplicación</option>
+      <option value="det">Determinante</option>
+      <option value="inv">Inversa</option>
+      <option value="trans">Transpuesta</option>
+    </select>
+    <div id="matrices"></div>
+    <button type="submit">Calcular</button>
+  </form>
+  <div class="resultado result-card" id="resultado"></div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+function renderMatrices() {
+    let size = parseInt(document.getElementById("size").value);
+    let op = document.getElementById("operacion").value;
+    let html = '';
+    if (op == "sum" || op == "resta" || op == "mult") {
+        html += `<div class="mat-section"><h3>Matriz A</h3>${matrixInputs('A', size)}</div>`;
+        html += `<div class="mat-section"><h3>Matriz B</h3>${matrixInputs('B', size)}</div>`;
+    } else {
+        html += `<div class="mat-section"><h3>Matriz</h3>${matrixInputs('A', size)}</div>`;
+    }
+    document.getElementById("matrices").innerHTML = html;
+}
+function matrixInputs(prefix, n) {
+    let html = '<table class="mat-table">';
+    for(let i=0;i<n;i++){
+        html+='<tr>';
+        for(let j=0;j<n;j++)
+            html+=`<td><input type="number" id="${prefix}${i}${j}" value="0"></td>`;
+        html+='</tr>';
+    }
+    html+='</table>';
+    return html;
+}
+
+function getMatrix(prefix, n) {
+    let m = [];
+    for(let i=0;i<n;i++){
+        let row=[];
+        for(let j=0;j<n;j++){
+            let val = document.getElementById(prefix+i+j).value;
+            if(val === "") val = 0;
+            row.push(Number(val));
+        }
+        m.push(row);
+    }
+    return m;
+}
+function setResult(text) { document.getElementById("resultado").innerHTML = text; }
+
+function matAdd(a, b) { return a.map((row, i)=> row.map((v, j)=>v+b[i][j])); }
+function matSub(a, b) { return a.map((row, i)=> row.map((v, j)=>v-b[i][j])); }
+function matMul(a, b) {
+    let n=a.length, r=[];
+    for(let i=0;i<n;i++){
+        r[i]=[];
+        for(let j=0;j<n;j++){
+            let s=0;
+            for(let k=0;k<n;k++) s+=a[i][k]*b[k][j];
+            r[i][j]=s;
+        }
+    }
+    return r;
+}
+function transpose(a){ return a[0].map((_,i)=> a.map(r=>r[i])); }
+
+// Determinante general por Laplace
+function determinant(a) {
+    let n = a.length;
+    if (n === 1) return a[0][0];
+    if (n === 2) return a[0][0]*a[1][1] - a[0][1]*a[1][0];
+    let det = 0;
+    for(let k=0;k<n;k++){
+        let sub = a.slice(1).map(row=>row.filter((_,j)=>j!=k));
+        det += ((k%2==0 ? 1 : -1)*a[0][k]*determinant(sub));
+    }
+    return det;
+}
+// Inversa general para nxn (matriz adjunta / determinante)
+function inverse(a) {
+    let n = a.length;
+    let det = determinant(a);
+    if(det === 0) return null;
+    if(n === 1) return [[1/a[0][0]]];
+    let adj = [];
+    for(let i=0;i<n;i++){
+        adj[i] = [];
+        for(let j=0;j<n;j++){
+            let sub = a.filter((_,ii)=>ii!=i).map(row=>row.filter((_,jj)=>jj!=j));
+            adj[i][j] = (((i+j)%2? -1:1)*determinant(sub));
+        }
+    }
+    let adjT = transpose(adj);
+    let inv = [];
+    for(let i=0;i<n;i++)
+        inv[i]=adjT[i].map(x=>x/det);
+    return inv;
+}
+function prettyMat(a){
+    return '<div class="mat-show"><table class="resmat">'+a.map(row=>'<tr>'+row.map(v=>`<td>${Number(v).toFixed(3)}</td>`).join('')+'</tr>').join('')+'</table></div>';
+}
+function calcular(){
+    let size = parseInt(document.getElementById("size").value);
+    let op = document.getElementById("operacion").value;
+    let A = getMatrix("A", size);
+    let B = (op=='sum'||op=='resta'||op=="mult")? getMatrix("B", size):null;
+    // Validación de números
+    if([].concat(...A).concat(B?[].concat(...B):[]).some(isNaN)) {
+        setResult('<span class="error">Rellena todos los datos correctamente.</span>');
+        return;
+    }
+    if (op=="sum") setResult('Resultado:<br>'+prettyMat(matAdd(A,B)));
+    else if (op=="resta") setResult('Resultado:<br>'+prettyMat(matSub(A,B)));
+    else if (op=="mult") setResult('Resultado:<br>'+prettyMat(matMul(A,B)));
+    else if (op=="det") setResult(`Determinante: <span style="color:#56ffbe">${determinant(A)}</span>`);
+    else if (op=="trans") setResult('Transpuesta:<br>'+prettyMat(transpose(A)));
+    else if (op=="inv") {
+        let inv = inverse(A);
+        setResult(inv ? 'Inversa:<br>' + prettyMat(inv) : '<span class="error">Matriz no invertible (det=0).</span>');
+    }
+}
+
+document.getElementById("operacion").onchange = renderMatrices;
+window.onload = renderMatrices;
+// Permite operar con Enter
+document.body.addEventListener("keydown", function(e){
+  if(e.key==="Enter" && (e.target.tagName==="INPUT" || e.target.tagName==="SELECT"))
+    calcular();
+});
+</script>
+{% endblock %}

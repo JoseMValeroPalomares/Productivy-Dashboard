@@ -1,0 +1,53 @@
+.nav-app button {
+    border: none;
+    color: #141c3a;
+    font-weight: 800;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 15px #2ae5cbbb;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 12px 20px;
+    transition: 
+        filter 0.18s ease, 
+        transform 0.22s cubic-bezier(.34,1.56,.64,1), 
+        box-shadow 0.18s ease,
+        background 0.18s;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.nav-app button:active {
+    filter: brightness(0.97);
+    transform: scale(0.96);
+    box-shadow: 0 2px 6px #22ccaa99;
+    background: #f6f8fa; /* color de fondo claro */
+    color: #20e3b2; /* opcional: color de texto acorde */
+}
+
+.nav-app button:focus {
+    outline: 2px solid #20e3b2;
+    outline-offset: 2px;
+}
+
+/* Mejora: efecto sutil al pasar el mouse, sin animación fuerte */
+.nav-app button:hover:not(:active) {
+    filter: brightness(1.08);
+}
+
+.tool-main-container {
+  max-width: 500px;
+  margin: 100px auto 40px auto;
+  padding: 30px;
+  background: rgba(15,18,36,0.95);
+  border-radius: 20px;
+  box-shadow: 0 0 30px rgba(0,255,200,0.2);
+  text-align: center;
+}
+
+.nav-app {
+  position: fixed;
+  top: 0;
+
+
+}
+

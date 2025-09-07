@@ -1,0 +1,223 @@
+{% extends "juegos/base_juegos.html" %}
+
+{% block title %}⚡ Tiempo de Reacción{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<style>
+  :root {
+    --azul: #00eaff;
+    --verde: #00d26a;
+    --rojo: #d9303e;
+    --texto: #eefcff;
+    --fondo: linear-gradient(120deg,#1e2548 10%,#45fadf 90%);
+  }
+
+  html, body {
+    margin: 0; padding: 0;
+    width: 100vw; height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    background: var(--fondo);
+    color: var(--texto);
+    overflow: hidden;
+    animation: fondoAnim 10s ease-in-out infinite alternate;
+  }
+
+  body, #game-container {
+    width: 100vw; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+
+  #game-area {
+    flex: 1;
+    display: flex; 
+    flex-direction: column;
+    align-items: center; 
+    justify-content: center;
+    transition: background 0.6s ease, transform 0.3s ease;
+    background: rgba(33, 93, 137, 0.8);
+    backdrop-filter: blur(6px);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    margin: 4vh;
+  }
+
+  .verde { background-color: var(--verde) !important; }
+  .rojo  { background-color: var(--rojo) !important; }
+  .azul  { background-color: rgba(33,93,137,0.9) !important; }
+
+  .mensaje {
+    font-size: clamp(1.1rem, 4vw, 2.3rem);
+    text-align: center; 
+    margin-bottom: 2vw;
+    padding: 0 6vw; 
+    font-weight: 600;
+    line-height: 1.27;
+    text-shadow: 0 0 12px rgba(0,234,255,0.5);
+  }
+
+  /* Pulso en "YA!" */
+  .pulse {
+    animation: pulse 1s infinite alternate;
+    color: #fff;
+    text-shadow: 0 0 20px #00ffaa, 0 0 40px #00ffaa;
+  }
+
+  .boton-jugar {
+    font-size: clamp(1.1rem, 3vw, 1.8rem);
+    padding: 2vw 6vw;
+    border-radius: 14px;
+    background: var(--azul);
+    color: #002233;
+    font-weight: bold; 
+    border: none;
+    cursor: pointer; 
+    transition: all 0.25s ease-in-out;
+    box-shadow: 0 6px 20px rgba(0,234,255,0.37);
+    min-width: 170px;
+    max-width: 90vw;
+    margin-bottom: 2vw;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .boton-jugar::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+    transform: skewX(-30deg);
+    animation: brillo 3s infinite;
+  }
+
+  .boton-jugar:hover:enabled, .boton-jugar:focus:enabled {
+    background: #66faff;
+    transform: scale(1.06);
+    box-shadow: 0 8px 30px rgba(0,234,255,0.7);
+  }
+
+  .boton-jugar:disabled {
+    opacity: .7; filter: grayscale(0.17);
+    cursor: not-allowed;
+  }
+
+  .estadisticas {
+    margin-top: 2vw;
+    font-size: clamp(.96rem, 2vw, 1.2rem);
+    text-align: center; 
+    color: #aff;
+    line-height: 1.5;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 16px;
+    border-radius: 10px;
+    box-shadow: inset 0 0 10px rgba(0,234,255,0.4);
+  }
+
+  /* Animaciones */
+  @keyframes fondoAnim {
+    0%   { background: linear-gradient(120deg,#1e2548 10%,#45fadf 90%); }
+    100% { background: linear-gradient(120deg,#0f1840 10%,#007f99 90%); }
+  }
+
+  @keyframes brillo {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+  }
+
+  @keyframes pulse {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.1); opacity: 0.8; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="game-container">
+  <div id="game-area" class="azul">
+    <div class="mensaje" id="mensaje">⚡ Mide tu reflejo.<br>Pulsa para comenzar.</div>
+    <button class="boton-jugar" id="boton">Comenzar</button>
+    <div class="estadisticas" id="estadisticas"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+  const gameArea = document.getElementById('game-area');
+  const mensaje = document.getElementById('mensaje');
+  const boton = document.getElementById('boton');
+  const estadisticas = document.getElementById('estadisticas');
+
+  const state = { waiting: false, startTime: 0, times: [] };
+
+  const setFondo = color => {
+    gameArea.classList.remove('azul','verde','rojo');
+    gameArea.classList.add(color);
+  };
+
+  function esperarYJugar() {
+    mensaje.innerHTML = '✋ Espera que el fondo se ponga <b>VERDE</b>...';
+    mensaje.classList.remove("pulse");
+    setFondo('rojo');
+    boton.disabled = true;
+    boton.textContent = 'Esperando...';
+    state.waiting = true;
+    const t = 1500 + Math.random() * 2000;
+    setTimeout(() => {
+      state.startTime = performance.now();
+      setFondo('verde');
+      state.waiting = false;
+      mensaje.innerHTML = '✅ <span class="pulse">¡YA!</span> Haz clic lo más rápido posible.';
+      boton.disabled = false;
+      boton.textContent = "¡Clic!";
+    }, t);
+  }
+
+  function mostrarStats() {
+    if (!state.times.length) { estadisticas.innerHTML = ""; return; }
+    const avg = Math.round(state.times.reduce((a,b)=>a+b,0)/state.times.length);
+    const best = Math.min(...state.times);
+    const ultimos = state.times.slice(-5).join(" ms, ");
+    estadisticas.innerHTML = `<strong>Últimos:</strong> ${ultimos} ms<br>
+      <strong>Media:</strong> ${avg} ms<br>
+      <strong>Mejor:</strong> ${best} ms`;
+  }
+
+  boton.onclick = () => {
+    if (state.waiting) {
+      mensaje.innerHTML = "⛔ ¡Muy rápido! Espera el color verde 😅";
+      mensaje.classList.remove("pulse");
+      setFondo("rojo");
+      boton.disabled = true;
+      boton.textContent = "Demasiado pronto…";
+      setTimeout(() => {
+        boton.textContent = "Intentarlo de nuevo";
+        mensaje.innerHTML = "Pulsa para probar otra vez.";
+        setFondo("azul");
+        boton.disabled = false;
+      }, 1300);
+      return;
+    }
+    if (boton.textContent.includes('¡Clic!')) {
+      const reactionTime = Math.round(performance.now() - state.startTime);
+      state.times.push(reactionTime);
+      mensaje.innerHTML = `⏱️ Tu tiempo de reacción fue <strong>${reactionTime} ms</strong><br>Pulsa para intentarlo otra vez.`;
+      mensaje.classList.remove("pulse");
+      boton.textContent = "Probar otra vez";
+      setFondo('azul');
+      mostrarStats();
+    } else {
+      estadisticas.innerHTML = "";
+      esperarYJugar();
+      setFondo('azul');
+    }
+  };
+
+  setFondo('azul');
+</script>
+{% endblock %}

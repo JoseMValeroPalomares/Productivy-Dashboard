@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Schedule Móvil — Horario Visible</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/isoWeek.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/advancedFormat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/isBetween.js"></script>
+
+  <script>
+    dayjs.extend(dayjs_plugin_isoWeek);
+    dayjs.extend(dayjs_plugin_advancedFormat);
+    dayjs.extend(dayjs_plugin_isBetween);
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial;
+    }
+
+    html, body {
+      margin: 0;
+      background: #f4f6fb;
+      color: #0f172a;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    main {
+      display: flex;
+      flex-direction: column;
+      max-width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    header {
+      padding: 12px 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: white;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+      position: relative;
+      z-index: 10;
+    }
+
+    header h1 {
+      font-weight: 700;
+      font-size: 1.25rem;
+      margin: 0;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    header button {
+      background: #4f46e5;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      padding: 6px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      width: 80px;
+      white-space: nowrap;
+    }
+
+    #week-range {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-top: 4px;
+      pointer-events: none;
+      user-select: none;
+      color: #555;
+      white-space: nowrap;
+    }
+
+    .calendar-container {
+      display: flex;
+      height: calc(100vh - 80px);
+      background: white;
+      border-top: 1px solid #ddd;
+      overflow: hidden;
+    }
+
+    /* Contenedor vertical con scroll */
+    .calendar-scroll {
+      display: flex;
+      flex: 1;
+      overflow-y: auto; /* scroll vertical común */
+      overflow-x: hidden;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Columna de horas */
+    .times-col {
+      flex: 0 0 50px;
+      background: #fafafa;
+      border-right: 1px solid #ddd;
+      padding: 4px 0;
+      user-select: none;
+      overflow: visible !important;
+      position: relative;
+      overflow-y: auto; /* debe ser auto para sincronizar scroll */
+      height: 100%; /* igual altura que calendar-scroll */
+    }
+
+    /* Wrapper horizontal para días con scroll horizontal */
+    .days-col-horizontal {
+      flex: 1;
+      overflow-x: auto; /* scroll horizontal para días */
+      overflow-y: visible !important;
+      height: 100%;
+      position: relative;
+    }
+
+    /* Contenedor de días */
+    .days-col {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+      position: relative;
+    }
+
+    .hour {
+      height: 48px;
+      line-height: 48px;
+      font-size: 12px;
+      text-align: center;
+      color: #555;
+      border-bottom: 1px solid #eee;
+      user-select: none;
+    }
+
+    .day {
+      position: relative;
+      width: 280px;
+      border-left: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .day-header {
+      background: #e0e7ff;
+      padding: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 1rem;
+      border-bottom: 1px solid #ddd;
+      user-select: text;
+      white-space: nowrap;
+    }
+
+    .day-grid {
+      position: relative;
+      flex: 1;
+      height: calc(100% - 40px);
+      user-select: none;
+    }
+
+    .slot {
+      height: 48px;
+      border-bottom: 1px solid #eee;
+      user-select: none;
+    }
+
+    .task {
+      position: absolute;
+      left: 5px;
+      right: 5px;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 4px 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      user-select: none;
+      transition: background-color 0.2s ease;
+      touch-action: manipulation;
+      z-index: 5;
+    }
+
+    .task.completed {
+      background-color: #22c55e !important;
+      text-decoration: line-through;
+      opacity: 0.75;
+    }
+
+    #color-picker {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      user-select: none;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.3s ease;
+    }
+
+    .color-swatch.selected {
+      border-color: #222;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      user-select: none;
+    }
+
+    .modal {
+      width: 95%;
+      max-width: 400px;
+      background: white;
+      border-radius: 12px;
+      padding: 20px 24px;
+      box-shadow: 0 20px 60px rgba(2, 6, 23, 0.4);
+      max-height: 90vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal h3 {
+      margin: 0 0 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: block;
+      color: #475569;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 12px;
+    }
+
+    input,
+    select,
+    textarea {
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 8px;
+      width: 100%;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: #4f46e5;
+      box-shadow: 0 0 6px #c7d2fe;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border-radius: 5px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      transition: background-color 0.3s ease;
+      flex: 1;
+      text-align: center;
+    }
+
+    .btn:hover {
+      background: #4338ca;
+    }
+
+    .btn.primary {
+      background: #2563eb;
+    }
+
+    .btn.primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn.danger {
+      background: #ef4444;
+      flex: 0.7;
+    }
+
+    .btn.danger:hover {
+      background: #b91c1c;
+    }
+  </style>
+</head>
+
+<body>
+
+<main>
+    <header>
+      <button id="btn-prev-week" aria-label="Semana anterior">← Anterior</button>
+      <h1>Calendario móvil</h1>
+      <button id="btn-next-week" aria-label="Semana siguiente">Siguiente →</button>
+      <div id="week-range" aria-live="polite"></div>
+    </header>
+
+    <div class="calendar-container" role="region" aria-label="Calendario semanal con horario visible">
+      <div class="calendar-scroll">
+        <div class="times-col" aria-hidden="true"></div>
+        <div class="days-col-horizontal" id="days-col-horizontal">
+          <div class="days-col" id="days-col"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal tarea -->
+  <div id="modal-backdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal" role="document">
+      <h3 id="modal-title">Nueva tarea</h3>
+
+      <div class="form-row">
+        <label for="task-title">Nombre</label>
+        <input id="task-title" aria-required="true" />
+      </div>
+
+      <div class="form-row">
+        <label for="task-desc">Descripción</label>
+        <textarea id="task-desc" rows="3"></textarea>
+      </div>
+
+      <div class="form-row">
+        <label for="task-duration">Duración</label>
+        <select id="task-duration">
+          <option value="0.25">15 min</option>
+          <option value="0.5">30 min</option>
+          <option value="1" selected>1 hora</option>
+          <option value="1.5">1h 30 min</option>
+          <option value="2">2 horas</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="task-recurrence">Repetir</label>
+        <select id="task-recurrence">
+          <option value="none">Sin repetición</option>
+          <option value="daily">Diaria</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensual</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label for="task-end-date">Fecha fin</label>
+        <input id="task-end-date" type="date" />
+      </div>
+
+      <div class="form-row">
+        <label>Color</label>
+        <div id="color-picker"></div>
+      </div>
+
+      <div class="modal-buttons">
+        <button class="btn danger" id="modal-delete" style="display:none;">Eliminar</button>
+        <button class="btn" id="modal-cancel">Cancelar</button>
+        <button class="btn primary" id="modal-save">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Confirmación de Eliminación -->
+<div id="delete-modal-backdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+  <div class="modal" role="document">
+    <h3>¿Eliminar tarea?</h3>
+    <p>Esta acción no se puede deshacer.</p>
+    <div class="modal-buttons">
+      <button class="btn" id="delete-cancel">Cancelar</button>
+      <button class="btn danger" id="delete-confirm">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  const API = {
+    week: '/api/week',
+    tasks: '/api/tasks'
+  };
+
+  const COLORS = [
+    '#4f46e5', '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+    '#ec4899', '#f97316', '#22d3ee', '#a3e635'
+  ];
+
+  const state = {
+    weekStart: dayjs().startOf('isoWeek'),
+    timeStart: 7,
+    timeEnd: 23,
+    tasks: [],
+    modalOpen: false,
+    modalTask: null,
+    selectedColor: COLORS[0],
+    modalIsNew: true,
+    modalDate: null,
+    modalStartHour: null,
+  };
+
+  // Elementos modales y botones
+  const deleteModal = document.getElementById("delete-modal-backdrop");
+  const deleteCancel = document.getElementById("delete-cancel");
+  const deleteConfirm = document.getElementById("delete-confirm");
+
+  const modal = document.getElementById('modal-backdrop');
+  const modalTitle = document.getElementById('modal-title');
+  const inputTitle = document.getElementById('task-title');
+  const inputDesc = document.getElementById('task-desc');
+  const selectDuration = document.getElementById('task-duration');
+  const selectRecurrence = document.getElementById('task-recurrence');
+  const inputEndDate = document.getElementById('task-end-date');
+  const colorPickerContainer = document.getElementById('color-picker');
+  const btnCancel = document.getElementById('modal-cancel');
+  const btnSave = document.getElementById('modal-save');
+  const btnDelete = document.getElementById('modal-delete');
+
+  const calendarScroll = document.querySelector('.calendar-scroll');
+  const timesCol = document.querySelector('.times-col');
+  const daysCol = document.querySelector('.days-col');
+
+  let currentEditingTask = null;
+  state.selectedColor = COLORS[0];
+
+  // Sincronizar scroll vertical
+// Solo sincronizar scroll de la columna de horas con el contenedor padre con scroll
+calendarScroll.addEventListener('scroll', () => {
+  timesCol.scrollTop = calendarScroll.scrollTop;
+  // Quitar: daysCol.scrollTop = calendarScroll.scrollTop; // daysCol no tiene scroll real
+});
+
+
+  deleteCancel.onclick = () => {
+    deleteModal.style.display = "none";
+  };
+
+  function openDeleteModal() {
+    deleteModal.style.display = "flex";
+  }
+
+  deleteConfirm.onclick = async () => {
+    if (!currentEditingTask) return;
+    try {
+      const resp = await fetch(`${API.tasks}/${currentEditingTask.id}`, {
+        method: 'DELETE',
+      });
+      if (!resp.ok) throw new Error('Error eliminando la tarea');
+      deleteModal.style.display = "none";
+      closeModal();
+      await refreshCalendar();
+    } catch (e) {
+      alert('Error eliminando la tarea: ' + e.message);
+    }
+  };
+
+  btnCancel.onclick = closeModal;
+
+  btnDelete.onclick = () => {
+    if (!currentEditingTask) return;
+    openDeleteModal();
+  };
+
+  btnSave.onclick = async () => {
+  const title = inputTitle.value.trim();
+  if (!title) {
+    alert('El título es obligatorio');
+    inputTitle.focus();
+    return;
+  }
+
+  if (!state.modalDate) {
+    alert('Fecha de tarea no válida');
+    return;
+  }
+  if (typeof state.modalStartHour !== 'number' || isNaN(state.modalStartHour)) {
+    alert('Hora de inicio no válida');
+    return;
+  }
+
+  const taskObj = {
+    id: state.modalIsNew ? null : currentEditingTask?.id,
+    title,
+    description: inputDesc.value.trim(),
+    date: state.modalDate,
+    startHour: state.modalStartHour,
+    duration: parseFloat(selectDuration.value),
+    completed: state.modalIsNew ? false : currentEditingTask?.completed,
+    inProgress: state.modalIsNew ? false : currentEditingTask?.inProgress,
+    color: state.selectedColor || COLORS[0],
+    recurrence: selectRecurrence.value,
+    endDate: inputEndDate.value || null
+  };
+
+  try {
+    if (state.modalIsNew) {
+      await addTask(taskObj);
+    } else {
+      await updateTask(taskObj);
+    }
+    closeModal();
+  } catch (e) {
+    alert("Error guardando tarea: " + e.message);
+  }
+};
+
+  function renderColorPicker() {
+    colorPickerContainer.innerHTML = '';
+    COLORS.forEach(color => {
+      const sw = document.createElement('div');
+      sw.className = 'color-swatch';
+      sw.style.backgroundColor = color;
+      sw.onclick = () => {
+        state.selectedColor = color;
+        updateColorSelection();
+      };
+      colorPickerContainer.appendChild(sw);
+    });
+    updateColorSelection();
+  }
+
+  function updateColorSelection() {
+    document.querySelectorAll('#color-picker .color-swatch').forEach(s => {
+      s.classList.toggle('selected', s.style.backgroundColor === state.selectedColor);
+    });
+  }
+
+  function openModal(task = null, date = null, startHour = null) {
+  state.modalOpen = true;
+  modal.style.display = 'flex';
+  currentEditingTask = task;
+  if (task) {
+    state.modalIsNew = false;
+    modalTitle.textContent = "Editar tarea";
+    inputTitle.value = task.title || '';
+    inputDesc.value = task.description || '';
+    selectDuration.value = task.duration || "1";
+    selectRecurrence.value = task.recurrence || 'none';
+    inputEndDate.value = task.endDate || '';
+    state.selectedColor = task.color || COLORS[0];
+    state.modalDate = task.date;
+    state.modalStartHour = parseFloat(task.startHour);
+    btnDelete.style.display = 'inline-block';
+  } else {
+    state.modalIsNew = true;
+    modalTitle.textContent = "Nueva tarea";
+    inputTitle.value = '';
+    inputDesc.value = '';
+    selectDuration.value = "1";
+    selectRecurrence.value = 'none';
+    inputEndDate.value = '';
+    state.selectedColor = COLORS[0];
+
+    // Validar y asignar fecha y hora para nueva tarea
+    state.modalDate = date || dayjs().format('YYYY-MM-DD'); // por si no llega fecha usar hoy
+    state.modalStartHour = typeof startHour === "number" ? startHour : state.timeStart;
+    
+    btnDelete.style.display = 'none';
+  }
+  renderColorPicker();
+}
+
+
+  function closeModal() {
+    modal.style.display = 'none';
+    state.modalOpen = false;
+    currentEditingTask = null;
+  }
+
+  async function addTask(task) {
+    const resp = await fetch(API.tasks, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(task)
+    });
+    if (!resp.ok) throw new Error('Error creando tarea');
+    await refreshCalendar();
+  }
+
+  async function updateTask(task) {
+    const resp = await fetch(`${API.tasks}/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(task)
+    });
+    if (!resp.ok) throw new Error('Error actualizando tarea');
+    await refreshCalendar();
+  }
+
+  function formatHour(decimalHour) {
+    const h = Math.floor(decimalHour);
+    const m = Math.round((decimalHour - h) * 60);
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  function generateTimeSlots(start, end, interval = 0.25) {
+    const slots = [];
+    for (let h = start; h < end; h += interval) slots.push(h);
+    return slots;
+  }
+
+  function updateWeekRange() {
+    const end = state.weekStart.add(6, 'day');
+    document.getElementById('week-range').textContent =
+      `${state.weekStart.format('DD MMM YYYY')} - ${end.format('DD MMM YYYY')}`;
+  }
+
+  function renderTimes() {
+    const container = document.querySelector('.times-col');
+    container.innerHTML = '';
+    generateTimeSlots(state.timeStart, state.timeEnd, 0.25).forEach(h => {
+      const div = document.createElement('div');
+      div.className = 'hour';
+      div.style.height = '48px';
+      div.textContent = formatHour(h);
+      container.appendChild(div);
+    });
+  }
+
+  function renderDays() {
+    const container = document.getElementById('days-col');
+    container.innerHTML = '';
+    const slotsCount = generateTimeSlots(state.timeStart, state.timeEnd, 0.25).length;
+
+    for (let i = 0; i < 7; i++) {
+      const day = state.weekStart.add(i, 'day');
+      const dayEl = document.createElement('div');
+      dayEl.className = 'day';
+      dayEl.dataset.date = day.format('YYYY-MM-DD');
+
+      const header = document.createElement('div');
+      header.className = 'day-header';
+      header.textContent = day.format('ddd DD MMM');
+      dayEl.appendChild(header);
+
+      const dayGrid = document.createElement('div');
+      dayGrid.className = 'day-grid';
+      dayGrid.style.position = 'relative';
+      dayGrid.style.height = `${slotsCount * 48}px`;
+
+      generateTimeSlots(state.timeStart, state.timeEnd, 0.25).forEach(h => {
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.time = h;
+        slot.title = `Añadir tarea: ${formatHour(h)}`;
+        slot.style.height = '48px';
+        slot.addEventListener('click', () => openModal(null, day.format('YYYY-MM-DD'), h));
+        dayGrid.appendChild(slot);
+      });
+
+      dayEl.appendChild(dayGrid);
+      container.appendChild(dayEl);
+    }
+  }
+
+  function roundToQuarter(hour) {
+    return Math.round(hour * 4) / 4;
+  }
+
+  function renderTasks() {
+    document.querySelectorAll('.task').forEach(el => el.remove());
+    const weekStart = state.weekStart.startOf('isoWeek');
+    const weekEnd = weekStart.add(6, 'day');
+
+    state.tasks.forEach(task => {
+      if (dayjs(task.date).isBetween(weekStart, weekEnd, null, '[]')) {
+        renderSingleTask(task);
+      }
+    });
+  }
+
+  function renderSingleTask(task) {
+    const dayEl = document.querySelector(`.day[data-date="${task.date}"] .day-grid`);
+    if (!dayEl) return;
+
+    const slotHeight = 48;
+    const startH = roundToQuarter(parseFloat(task.startHour));
+    const durationH = parseFloat(task.duration);
+    const top = (startH - state.timeStart) * slotHeight;
+    const height = durationH * slotHeight;
+
+    const taskEl = document.createElement('div');
+    taskEl.className = 'task ' + (task.completed ? 'completed' : 'pending');
+    taskEl.style.top = `${top}px`;
+    taskEl.style.height = `${height}px`;
+    taskEl.style.backgroundColor = task.color || COLORS[0];
+    taskEl.dataset.id = task.id;
+    taskEl.dataset.date = task.date;
+    taskEl.dataset.startHour = task.startHour;
+    taskEl.dataset.duration = task.duration;
+
+    taskEl.innerHTML = `
+      <div class="title">${task.title}</div>
+      ${task.description ? `<div class="desc">${task.description}</div>` : ''}
+    `;
+
+    taskEl.onclick = () => openModal(task, task.date, task.startHour);
+
+    dayEl.appendChild(taskEl);
+  }
+
+  document.getElementById('btn-prev-week').addEventListener('click', () => {
+    state.weekStart = state.weekStart.subtract(1, 'week');
+    refreshCalendar();
+  });
+
+  document.getElementById('btn-next-week').addEventListener('click', () => {
+    state.weekStart = state.weekStart.add(1, 'week');
+    refreshCalendar();
+  });
+
+  async function refreshCalendar() {
+    updateWeekRange();
+    try {
+      const resp = await fetch(`${API.week}?start=${state.weekStart.format('YYYY-MM-DD')}`);
+      if (!resp.ok) throw new Error('Error cargando datos');
+      const data = await resp.json();
+      state.tasks = data.tasks || [];
+      renderTimes();
+      renderDays();
+      renderTasks();
+    } catch (e) {
+      alert('No se pudieron cargar las tareas.');
+      console.error(e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshCalendar();
+  });
+</script>
+</body>
+
+</html>
+ 

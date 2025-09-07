@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Calculadora Científica{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<!-- No agregamos estilos inline aquí para evitar conflicto,
+     los pondrás en main.css para que tomen efecto siempre -->
+{% endblock %}
+
+{% block content %}
+
+
+<div class="calculator-container" role="region" aria-label="Calculadora Científica">
+  <div class="display" id="display" aria-live="polite" aria-atomic="true">0</div>
+  <div class="buttons">
+    <button class="special" onclick="clearDisplay()" aria-label="Limpiar">C</button>
+    <button class="special" onclick="backspace()" aria-label="Borrar último carácter">&larr;</button>
+    <button class="special" onclick="append('(')" aria-label="Paréntesis izquierdo">(</button>
+    <button class="special" onclick="append(')')" aria-label="Paréntesis derecho">)</button>
+    <button class="operator" onclick="append('/')" aria-label="División">&divide;</button>
+
+    <button onclick="append('7')" aria-label="Número 7">7</button>
+    <button onclick="append('8')" aria-label="Número 8">8</button>
+    <button onclick="append('9')" aria-label="Número 9">9</button>
+    <button class="operator" onclick="append('*')" aria-label="Multiplicación">&times;</button>
+    <button class="special" onclick="append('**')" aria-label="Potencia">x<sup>y</sup></button>
+
+    <button onclick="append('4')" aria-label="Número 4">4</button>
+    <button onclick="append('5')" aria-label="Número 5">5</button>
+    <button onclick="append('6')" aria-label="Número 6">6</button>
+    <button class="operator" onclick="append('-')" aria-label="Resta">−</button>
+    <button class="special" onclick="sqrt()" aria-label="Raíz cuadrada">√x</button>
+
+    <button onclick="append('1')" aria-label="Número 1">1</button>
+    <button onclick="append('2')" aria-label="Número 2">2</button>
+    <button onclick="append('3')" aria-label="Número 3">3</button>
+    <button class="operator" onclick="append('+')" aria-label="Suma">+</button>
+    <button class="special" onclick="log()" aria-label="Logaritmo natural">ln</button>
+
+    <button onclick="append('0')" aria-label="Número 0">0</button>
+    <button onclick="append('.')" aria-label="Punto decimal">.</button>
+    <button class="special" onclick="sin()" aria-label="Seno">sin</button>
+    <button class="special" onclick="cos()" aria-label="Coseno">cos</button>
+    <button class="special" onclick="tan()" aria-label="Tangente">tan</button>
+
+    <button class="equals" onclick="calculate()" aria-label="Calcular el resultado">=</button>
+    <button class="special" onclick="power2()" aria-label="Cuadrado">x²</button>
+    <button class="special" onclick="append('Math.PI')" aria-label="Pi">π</button>
+    <button class="special" onclick="append('Math.E')" aria-label="Constante e">e</button>
+
+    <!-- Botones de conversión -->
+    <button class="special" onclick="convertBin()" aria-label="Convertir a binario">Bin</button>
+    <button class="special" onclick="convertHex()" aria-label="Convertir a hexadecimal">Hex</button>
+    <button class="special" onclick="convertDec()" aria-label="Convertir a decimal">Dec</button>
+  </div>
+  <div style="max-width: 400px; margin: 2rem auto; text-align: center;">
+
+</div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let display = document.getElementById('display');
+  let current = '';
+
+  function updateDisplay() {
+    display.textContent = current || '0';
+  }
+
+  function append(value) {
+    if (/[\+\-\*\/\.]$/.test(current) && /[\+\-\*\/\.]/.test(value)) return;
+    current += value;
+    updateDisplay();
+  }
+
+  function clearDisplay() {
+    current = '';
+    updateDisplay();
+  }
+
+  function backspace() {
+    current = current.slice(0, -1);
+    updateDisplay();
+  }
+
+  function calculate() {
+    let expression = current
+      .replace(/Math\.PI/g, 'Math.PI')
+      .replace(/Math\.E/g, 'Math.E')
+      .replace(/√/g, 'Math.sqrt')
+      .replace(/ln\(/g, 'Math.log(')
+      .replace(/÷/g, '/')
+      .replace(/×/g, '*');
+    try {
+      let result = Function('"use strict";return (' + expression + ')')();
+      if (typeof result === "number" && isFinite(result)) {
+        current = result.toString();
+      } else {
+        current = "Error";
+      }
+    } catch (e) {
+      current = "Error";
+    }
+    updateDisplay();
+  }
+
+  // Funciones científicas
+  function sqrt() {
+    if (current) {
+      current = 'Math.sqrt(' + current + ')';
+      calculate();
+    }
+  }
+  function log() {
+    current = 'Math.log(' + (current || '1') + ')';
+    calculate();
+  }
+  function sin() {
+    current = 'Math.sin(' + (current || '0') + ')';
+    calculate();
+  }
+  function cos() {
+    current = 'Math.cos(' + (current || '0') + ')';
+    calculate();
+  }
+  function tan() {
+    current = 'Math.tan(' + (current || '0') + ')';
+    calculate();
+  }
+  function power2() {
+    if (current) {
+      current = '(' + current + ')**2';
+      calculate();
+    }
+  }
+
+  // Conversión a binario, hexadecimal y decimal
+  function convertBin() {
+    try {
+      let val = eval(current);
+      current = (val >>> 0).toString(2);
+    } catch {
+      current = 'Error';
+    }
+    updateDisplay();
+  }
+
+  function convertHex() {
+    try {
+      let val = eval(current);
+      current = (val >>> 0).toString(16).toUpperCase();
+    } catch {
+      current = 'Error';
+    }
+    updateDisplay();
+  }
+
+  function convertDec() {
+    try {
+      let val = eval(current);
+      current = (val >>> 0).toString(10);
+    } catch {
+      current = 'Error';
+    }
+    updateDisplay();
+  }
+
+  // Teclado
+  document.addEventListener('keydown', function (e) {
+    if (!isNaN(Number(e.key)) || e.key === '.') append(e.key);
+    if (['+', '-', '*', '/', '(', ')'].includes(e.key)) append(e.key);
+    if (e.key === 'Enter') calculate();
+    if (e.key === 'Backspace') backspace();
+    if (e.key === 'Escape') clearDisplay();
+  });
+
+  updateDisplay();
+</script>
+{% endblock %}

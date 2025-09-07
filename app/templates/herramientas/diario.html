@@ -1,0 +1,1100 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Diario — Herramientas{% endblock %}
+
+{% block extrastyle %}
+<style>
+/* --- Layout y fondo --- */
+:root {
+  --bg-1: #0f1724;
+  --card: rgba(28, 33, 55, 0.95);
+  --accent: linear-gradient(90deg,#29ffc6,#1ebba3);
+  --muted: #9bdacf;
+  --glass: rgba(255,255,255,0.03);
+  --success: #2ee6a8;
+  --danger: #ff6b7a;
+}
+body {
+  margin: 0;
+  font-family: Inter, 'Share Tech Mono', monospace;
+  background: radial-gradient(1200px 600px at 10% 10%, #0b1220 0%, #071127 25%, #03202b 100%);
+  color: #e6fffa;
+  -webkit-font-smoothing:antialiased;
+}
+.container {
+  max-width: 1100px;
+  width: 96%;
+  margin: 36px auto;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(9,20,36,0.5);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+  min-height: 72vh;
+}
+
+/* --- Sidebar (estructura) --- */
+.sidebar {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 400px;
+}
+.header {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+}
+.header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #8ff6df;
+}
+.controls {
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  background: var(--accent);
+  color: #081019;
+  box-shadow: 0 6px 18px rgba(30,200,170,0.12);
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed rgba(255,255,255,0.03);
+}
+.small {
+  padding: 6px 8px;
+  font-size: 0.95rem;
+}
+
+/* lista tree */
+.tree {
+  overflow: auto;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.03);
+  flex: 1 1 auto;
+}
+.node {
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+  justify-content: space-between;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+}
+.node .meta {
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.node .title {
+  font-weight: 700;
+  color: #8ff6df;
+}
+.node .sub {
+  font-size: 0.85rem;
+  color: #b9fff0cc;
+}
+.actions {
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+/* indents y niveles */
+.level-1 { margin-left: 6px; }
+.level-2 { margin-left: 18px; }
+.level-3 { margin-left: 30px; }
+
+/* --- Panel principal (editor/listado contenido) --- */
+.main {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 18px;
+  display:flex;
+  flex-direction:column;
+  gap: 12px;
+}
+.toolbar {
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+}
+.search {
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.input {
+  background: #081224;
+  border: 1px solid rgba(255,255,255,0.04);
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #bfffe9;
+  min-width: 220px;
+}
+.kv {
+  font-size: 0.85rem;
+  color: #9fe8d8;
+}
+
+/* list of contents */
+.content-list {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  min-height: 120px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.card .meta {
+  display:flex;
+  gap:6px;
+  align-items:center;
+  justify-content:space-between;
+}
+.card .title {
+  font-weight: 800;
+  color: #c7ffef;
+}
+.card .snippet {
+  flex:1;
+  font-size: 0.95rem;
+  color: #b8fff6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* editor modal */
+.modal {
+  position: fixed;
+  left:0; top:0; right:0; bottom:0;
+  display: none;
+  align-items:center;
+  justify-content:center;
+  background: rgba(1,6,10,0.6);
+  z-index: 120;
+}
+.modal.show { display:flex; }
+.modal-card {
+  background: #021426;
+  border-radius: 12px;
+  padding: 18px;
+  width: min(920px, 96vw);
+  max-height: 90vh;
+  overflow:auto;
+  box-shadow: 0 12px 46px rgba(0,0,0,0.8);
+}
+.form-grid {
+  display:grid;
+  grid-template-columns: 1fr 280px;
+  gap: 12px;
+}
+.form-row {
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:8px;
+}
+.input, textarea, select {
+  background: #04162a;
+  border: 1px solid rgba(255,255,255,0.04);
+  color: #cffff1;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+textarea { min-height: 200px; resize:vertical; }
+.select-compact { width:100%; }
+
+/* footer small */
+.help {
+  font-size: 0.85rem;
+  color: #9fe8d8;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* número de líneas */
+  line-clamp: 3; /* estándar */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+/* Botones de acción pequeños en notas/temas */
+.actions .btn-action {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--glass);
+  color: var(--muted);
+  transition: all 0.2s ease-in-out;
+}
+
+.actions .btn-action:hover {
+  background: rgba(155, 218, 207, 0.15);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* --- Variantes específicas --- */
+.btn-view {
+  color: #8ff6df;
+}
+.btn-view:hover {
+  background: rgba(47, 255, 200, 0.18);
+}
+
+.btn-edit {
+  color: var(--success);
+}
+.btn-edit:hover {
+  background: rgba(46, 230, 168, 0.2);
+  color: #2ee6a8;
+}
+
+.btn-delete {
+  color: var(--danger);
+}
+.btn-delete:hover {
+  background: rgba(255, 107, 122, 0.18);
+  color: #ff909b;
+}
+
+
+/* responsive */
+@media (max-width: 880px) {
+  .container { grid-template-columns: 1fr; padding: 12px; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- SIDEBAR: estructura -->
+  <aside class="sidebar" aria-label="Estructura del diario">
+    <div class="header">
+      <h2>Mi Diario</h2>
+      <div class="controls">
+        <button class="btn small" id="btn-new-content">+ Nota</button>
+        <button class="btn ghost small" id="btn-new-tema">+ Tema</button>
+      </div>
+    </div>
+
+    <div class="kv">Estructura</div>
+    <input class="input" id="quick-filter" placeholder="Filtrar por tema/categoría..." />
+    <div class="tree" id="structureTree" role="tree"></div>
+
+    <div class="kv">Búsqueda rápida</div>
+    <input class="input" id="filterText" placeholder="Buscar notas..." />
+
+    <select id="filterPlace" class="input select-compact">
+      <option value="all">Todas las ubicaciones</option>
+      <option value="root">Raíz (sin vínculo)</option>
+    </select>
+
+    <div style="margin-top:8px; display:flex; gap:8px;">
+      <button class="btn ghost small" id="btn-clear-all">Borrar todo</button>
+    </div>
+  </aside>
+
+  <!-- PANEL PRINCIPAL -->
+  <main class="main" aria-live="polite">
+    <div class="toolbar">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="kv">Notas</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="kv" id="countInfo">0 notas</div>
+        <button class="btn small" id="btn-export">Exportar JSON</button>
+      </div>
+    </div>
+
+    <div id="emptyHint" style="padding: 20px; text-align:center; color:#89f0d9; display:none;">
+      Sin notas aún. Pulsa <strong>+ Nota</strong> o crea un <strong>Tema</strong>.
+    </div>
+
+    <div class="content-list" id="contentList"></div>
+  </main>
+</div>
+
+<!-- ============================= -->
+<!-- MODAL: Editor de nota -->
+<!-- ============================= -->
+<div class="modal" id="modalEditor" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <h3>Editor de Nota</h3>
+    <label>Título</label>
+    <input id="noteTitle" class="input" placeholder="Título...">
+
+    <label>Contenido</label>
+    <textarea id="noteContent" placeholder="Escribe aquí..."></textarea>
+
+    <label>Ubicación</label>
+    <select id="notePlaceType" class="input">
+      <option value="root">Raíz</option>
+      <option value="tema">Tema</option>
+      <option value="categoria">Categoría</option>
+      <option value="subcategoria">Subcategoría</option>
+    </select>
+
+    <select id="notePlaceId" class="input"></select>
+
+    <label>Etiquetas</label>
+    <input id="noteTags" class="input" placeholder="ej: personal,ideas">
+
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn" id="btn-save-note">Guardar</button>
+      <button class="btn ghost" id="btn-delete-note" style="background:var(--danger);color:white;">Eliminar</button>
+      <button class="btn ghost" id="btn-close-editor">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- MODAL: Estructura -->
+<!-- ============================= -->
+<div class="modal" id="modalStruct" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <h3 id="structTitle">Nuevo elemento</h3>
+    <label>Tipo</label>
+    <select id="structType" class="input">
+      <option value="tema">Tema</option>
+      <option value="categoria">Categoría</option>
+      <option value="subcategoria">Subcategoría</option>
+    </select>
+
+    <label>Nombre</label>
+    <input id="structName" class="input" placeholder="Nombre...">
+
+    <div id="structParentWrap">
+      <label>Parent</label>
+      <select id="structParent" class="input"></select>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn" id="btn-save-struct">Guardar</button>
+      <button class="btn ghost" id="btn-delete-struct" style="background:var(--danger);color:white;">Eliminar</button>
+      <button class="btn ghost" id="btn-close-struct">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= -->
+<!-- MODAL: Confirmación -->
+<!-- ============================= -->
+<div class="modal" id="modalConfirm" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <p id="confirmMessage">¿Estás seguro?</p>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn" id="confirmYes">Sí</button>
+      <button class="btn ghost" id="confirmNo">No</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal ver nota -->
+<div class="modal" id="modalViewNote" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <h3 id="viewNoteTitle"></h3>
+    <div id="viewNoteContent" style="white-space: pre-wrap; margin-top: 8px;"></div>
+    <div style="margin-top: 8px;">
+      <button class="btn" id="btn-close-view">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+{% block extrascript %}
+<script>
+// Utilidades
+const now = () => new Date().toISOString();
+const uid = () => 'id_' + Math.random().toString(36).slice(2, 10);
+function escapeHtml(s) {
+  return s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+}
+
+// Guardar estructura (tema / categoria / subcategoria) con una única función
+document.getElementById('btn-save-struct').onclick = async () => {
+  const type = document.getElementById('structType').value;
+  const name = document.getElementById('structName').value.trim();
+  const parentSelect = document.getElementById('structParent');
+  const parentId = parentSelect ? parentSelect.value : '';
+
+  if (!name) {
+    alert('El nombre es obligatorio');
+    return;
+  }
+
+  if (currentStructEdit && currentStructEdit.id) {
+    const id = currentStructEdit.id;
+    if (type === 'tema') {
+      const obj = store.temas.find(t => t.id == id);
+      if (obj) { obj.name = name; }
+    } else if (type === 'categoria') {
+      const obj = store.categorias.find(c => c.id == id);
+      if (obj) {
+        obj.name = name;
+        obj.temaId = parentId || null;
+      }
+    } else if (type === 'subcategoria') {
+      const obj = store.subcategorias.find(s => s.id == id);
+      if (obj) {
+        obj.name = name;
+        obj.categoriaId = parentId || null;
+      }
+    }
+  } else {
+    if (type === 'tema') {
+      store.temas.push({ id: uid(), name, createdAt: now() });
+    } else if (type === 'categoria') {
+    if (!parentId) {
+      alert('Debes seleccionar un tema padre para la categoría');
+      return;
+    }
+    store.categorias.push({ id: uid(), name, temaId: parentId, createdAt: now() });
+  } else if (type === 'subcategoria') {
+      if (!parentId) {
+        alert('Debes seleccionar una categoría padre para la subcategoría');
+        return;
+      }
+      store.subcategorias.push({ id: uid(), name, categoriaId: parentId, createdAt: now() });
+    }
+  }
+  await saveData(store);
+  currentStructEdit = null;
+  document.getElementById('modalStruct').classList.remove('show');
+  store = await loadData();
+  renderAll();
+};
+
+// Modal confirmación (igual que antes)
+function showConfirm(message, onYes) {
+  const modal = document.getElementById('modalConfirm');
+  const msgEl = document.getElementById('confirmMessage');
+  const btnYes = document.getElementById('confirmYes');
+  const btnNo = document.getElementById('confirmNo');
+
+  msgEl.textContent = message || '¿Estás seguro?';
+  modal.classList.add('show');
+
+  function cleanUp() {
+    btnYes.removeEventListener('click', yesHandler);
+    btnNo.removeEventListener('click', noHandler);
+    modal.classList.remove('show');
+  }
+
+  function yesHandler() {
+    cleanUp();
+    onYes();
+  }
+
+  function noHandler() {
+    cleanUp();
+  }
+
+  btnYes.addEventListener('click', yesHandler);
+  btnNo.addEventListener('click', noHandler);
+}
+
+// API calls (igual)
+async function loadData() {
+  const res = await fetch('/api/diario');
+  if (!res.ok) {
+    console.error(await res.text());
+    return { temas: [], categorias: [], subcategorias: [], notas: [] };
+  }
+  return await res.json();
+}
+
+async function saveData(data) {
+  const res = await fetch('/api/diario', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    console.error(await res.text());
+    alert('Error guardando datos');
+  }
+}
+
+// Estado global
+let store = { temas: [], categorias: [], subcategorias: [], notas: [] };
+
+// Funciones para encontrar elementos
+function findTema(id) { return store.temas.find(t => t.id == id); }
+function findCategoria(id) { return store.categorias.find(c => c.id == id); }
+function findSubcategoria(id) { return store.subcategorias.find(s => s.id == id); }
+
+// Construcción de opciones para estructura padres
+function rebuildStructParentOptions(type) {
+  const wrap = document.getElementById('structParentWrap');
+  const select = document.getElementById('structParent');
+  select.innerHTML = '';
+
+  if (type === 'tema') {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+
+  if (type === 'categoria') {
+    store.temas.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t.id;
+      o.textContent = t.name;
+      select.appendChild(o);
+    });
+  } else if (type === 'subcategoria') {
+    store.categorias.forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.name;
+      select.appendChild(o);
+    });
+  }
+}
+
+// Renderizar estructura árbol
+function renderStructure() {
+  const container = document.getElementById('structureTree');
+  container.innerHTML = '';
+
+  store.temas.forEach(tema => {
+    const tdiv = document.createElement('div');
+    tdiv.className = 'node';
+    tdiv.innerHTML = `
+      <div class="meta">
+        <div><div class="title">${escapeHtml(tema.name)}</div>
+        <div class="sub">Tema • ${new Date(tema.createdAt).toLocaleString()}</div></div>
+      </div>
+      <div class="actions">
+        <button class="btn-action btn-edit" data-act="edit-tema" data-id="${tema.id}">✏ Editar</button>
+        <button class="btn-action btn-delete" data-act="del-tema" data-id="${tema.id}">🗑 Borrar</button>
+        <button class="btn-action btn-view" data-act="add-categoria" data-parent="${tema.id}">+ Cat</button>
+      </div>`;
+    container.appendChild(tdiv);
+
+    store.categorias.filter(c => c.temaId == tema.id).forEach(cat => {
+      const cdiv = document.createElement('div');
+      cdiv.className = 'node level-1';
+      cdiv.innerHTML = `
+        <div class="meta">
+          <div><div class="title">${escapeHtml(cat.name)}</div>
+          <div class="sub">Categoría</div></div>
+        </div>
+        <div class="actions">
+          <button class="btn-action btn-edit" data-act="edit-categoria" data-id="${cat.id}">✏ Editar</button>
+          <button class="btn-action btn-delete" data-act="del-categoria" data-id="${cat.id}">🗑 Borrar</button>
+          <button class="btn-action btn-view" data-act="add-subcategoria" data-parent="${cat.id}">+ Sub</button>
+        </div>`;
+      container.appendChild(cdiv);
+
+      store.subcategorias.filter(s => s.categoriaId == cat.id).forEach(sub => {
+        const sdiv = document.createElement('div');
+        sdiv.className = 'node level-2';
+        sdiv.innerHTML = `
+          <div class="meta">
+            <div><div class="title">${escapeHtml(sub.name)}</div>
+            <div class="sub">Subcategoría</div></div>
+          </div>
+          <div class="actions">
+            <button class="btn-action btn-edit" data-act="edit-subcategoria" data-id="${sub.id}">✏ Editar</button>
+            <button class="btn-action btn-delete" data-act="del-subcategoria" data-id="${sub.id}">🗑 Borrar</button>
+          </div>`;
+        container.appendChild(sdiv);
+      });
+    });
+  });
+
+  container.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.onclick = handleStructureAction;
+  });
+}
+
+
+// Renderizar notas con filtros y mensaje vacio
+function renderNotes() {
+  const container = document.getElementById('contentList');
+  const placeFilter = document.getElementById('filterPlace').value;
+  const textFilter = document.getElementById('filterText').value.trim().toLowerCase();
+
+  // Filtrar notas
+  const notesFiltered = store.notas.filter(note => {
+    let matchesPlace = placeFilter === 'all' || note.place === placeFilter;
+    let matchesText =
+      !textFilter ||
+      (note.title && note.title.toLowerCase().includes(textFilter)) ||
+      (note.content && note.content.toLowerCase().includes(textFilter)) ||
+      (note.tags && note.tags.some(tag => tag.toLowerCase().includes(textFilter)));
+    return matchesPlace && matchesText;
+  });
+
+  container.innerHTML = '';
+  if (notesFiltered.length === 0) {
+    document.getElementById('emptyHint').style.display = 'block';
+  } else {
+    document.getElementById('emptyHint').style.display = 'none';
+    notesFiltered.forEach(note => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const placeLabel = resolvePlaceLabel(note.place);
+      card.innerHTML = `
+        <div class="meta">
+          <div>
+            <div class="title">${escapeHtml(note.title || '(sin título)')}</div>
+            <div class="sub">${placeLabel} – ${new Date(note.createdAt).toLocaleString()}</div>
+          </div>
+          <div class="actions">
+            <button class="btn-action btn-edit" data-act="edit-note" data-id="${note.id}">✏ Editar</button>
+            <button class="btn-action btn-delete" data-act="del-note" data-id="${note.id}">🗑 Borrar</button>
+            <button class="btn-action btn-view" data-act="view-note" data-id="${note.id}">👁 Ver</button>
+          </div>
+        </div>
+        <div class="snippet">${escapeHtml(note.content || '')}</div>`;
+      container.appendChild(card);
+    });
+  }
+
+  // Delegación de eventos
+  container.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.onclick = handleNoteAction;
+  });
+
+  document.getElementById('countInfo').textContent =
+    `${notesFiltered.length} nota${notesFiltered.length !== 1 ? 's' : ''}`;
+}
+
+// Resolver etiquetas de lugar
+function resolvePlaceLabel(place) {
+  if (!place || place === 'root') return 'Raíz';
+  const [type, id] = place.split(':');
+  if (type === 'tema') { const t = findTema(id); return t ? `Tema: ${t.name}` : 'Tema desconocido'; }
+  if (type === 'categoria') { const c = findCategoria(id); return c ? `Categoría: ${c.name}` : 'Categoría desconocida'; }
+  if (type === 'subcategoria') { const s = findSubcategoria(id); return s ? `Subcategoría: ${s.name}` : 'Subcategoría desconocida'; }
+  return place;
+}
+
+// Render completo
+function renderAll() {
+  renderStructure();
+  renderNotes();
+  rebuildPlaceOptions(document.getElementById('notePlaceId'));
+  rebuildPlaceFilterOptions();
+}
+
+// Opciones para ubicación de nota
+function rebuildPlaceOptions(selectEl) {
+  if (!selectEl) return;
+  selectEl.innerHTML = '';
+  const optRoot = document.createElement('option');
+  optRoot.value = 'root';
+  optRoot.textContent = 'Raíz (sin asignar)';
+  selectEl.appendChild(optRoot);
+
+  if (store.temas.length) {
+    const groupT = document.createElement('optgroup');
+    groupT.label = 'Temas';
+    store.temas.forEach(t => {
+      const o = document.createElement('option');
+      o.value = 'tema:' + t.id;
+      o.textContent = `Tema: ${t.name}`;
+      groupT.appendChild(o);
+    });
+    selectEl.appendChild(groupT);
+  }
+  if (store.categorias.length) {
+    const groupC = document.createElement('optgroup');
+    groupC.label = 'Categorías';
+    store.categorias.forEach(c => {
+      const o = document.createElement('option');
+      o.value = 'categoria:' + c.id;
+      o.textContent = `Cat: ${c.name}`;
+      groupC.appendChild(o);
+    });
+    selectEl.appendChild(groupC);
+  }
+  if (store.subcategorias.length) {
+    const groupS = document.createElement('optgroup');
+    groupS.label = 'Subcategorías';
+    store.subcategorias.forEach(s => {
+      const o = document.createElement('option');
+      o.value = 'subcategoria:' + s.id;
+      o.textContent = `Sub: ${s.name}`;
+      groupS.appendChild(o);
+    });
+    selectEl.appendChild(groupS);
+  }
+}
+
+// Opciones filtro ubicación
+function rebuildPlaceFilterOptions() {
+  const sel = document.getElementById('filterPlace');
+  if (!sel) return;
+  sel.innerHTML = `<option value="all">Todas las ubicaciones</option><option value="root">Raíz (sin vínculo)</option>`;
+  [...store.temas].forEach(t => {
+    const o = document.createElement('option');
+    o.value = 'tema:' + t.id;
+    o.textContent = `Tema: ${t.name}`;
+    sel.appendChild(o);
+  });
+  [...store.categorias].forEach(c => {
+    const o = document.createElement('option');
+    o.value = 'categoria:' + c.id;
+    o.textContent = `Cat: ${c.name}`;
+    sel.appendChild(o);
+  });
+  [...store.subcategorias].forEach(s => {
+    const o = document.createElement('option');
+    o.value = 'subcategoria:' + s.id;
+    o.textContent = `Sub: ${s.name}`;
+    sel.appendChild(o);
+  });
+}
+
+// Acciones estructura (editar, borrar, agregar hijos)
+function handleStructureAction() {
+  const action = this.dataset.act;
+  const id = this.dataset.id;
+  if (action.startsWith('del-')) {
+    const tipo = action.split('-')[1];
+    showConfirm(`¿Eliminar ${tipo}?`, async () => {
+      await fetch(`/api/diario/${tipo}/${id}`, { method: 'DELETE' });
+      store = await loadData();
+      renderAll();
+    });
+  } else if (action.startsWith('edit-')) {
+    const tipo = action.split('-')[1];
+    openStructModal(tipo, id);
+  } else if (action.startsWith('add-')) {
+    const tipo = action.split('-')[1];
+    openStructModal(tipo === 'sub' ? 'subcategoria' : tipo, null, id);
+  }
+}
+
+// Acciones notas
+function handleNoteAction() {
+  const action = this.dataset.act;
+  const id = this.dataset.id;
+  if (action === 'del-note') {
+    showConfirm('¿Eliminar nota?', async () => {
+      const res = await fetch(`/api/diario/apartado/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        alert('Error al eliminar nota: ' + (await res.text()));
+        return;
+      }
+      store = await loadData();
+      renderAll();
+    });
+  }
+  else if (action === 'edit-note') {
+    openNoteModal(id);
+  } else if (action === 'view-note') {
+    const note = store.notas.find(n => n.id == id);
+    if (!note) return;
+    document.getElementById('viewNoteTitle').textContent = note.title || '(sin título)';
+    document.getElementById('viewNoteContent').textContent = note.content || '';
+    document.getElementById('modalViewNote').classList.add('show');
+  }
+}
+
+
+// Modal estructura
+let currentStructEdit = null;
+function openStructModal(type, id=null, parentHint=null) {
+  currentStructEdit = { type, id };
+  const modal = document.getElementById('modalStruct');
+  modal.classList.add('show');
+  document.getElementById('structType').value = type;
+  document.getElementById('structName').value = '';
+  const parentWrap = document.getElementById('structParentWrap');
+  const parentSelect = document.getElementById('structParent');
+
+  if (type === 'tema') {
+    parentWrap.style.display = 'none';
+  } else {
+    parentWrap.style.display = 'block';
+    parentSelect.innerHTML = '';
+    if (type === 'categoria') {
+      const optRoot = document.createElement('option');
+      optRoot.value = '';
+      optRoot.textContent = '(Seleccionar tema)';
+      parentSelect.appendChild(optRoot);
+      store.temas.forEach(t => {
+        const o = document.createElement('option');
+        o.value = t.id;
+        o.textContent = t.name;
+        parentSelect.appendChild(o);
+      });
+    } else if (type === 'subcategoria') {
+      const optRoot = document.createElement('option');
+      optRoot.value = '';
+      optRoot.textContent = '(Seleccionar categoría)';
+      parentSelect.appendChild(optRoot);
+      store.categorias.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.id;
+        o.textContent = c.name;
+        parentSelect.appendChild(o);
+      });
+    }
+  }
+
+  if (id) {
+    let obj = null;
+    if (type === 'tema') obj = store.temas.find(t => t.id == id);
+    else if (type === 'categoria') obj = store.categorias.find(c => c.id == id);
+    else if (type === 'subcategoria') obj = store.subcategorias.find(s => s.id == id);
+    if (!obj) {
+      alert('No se encuentra el elemento para editar');
+      modal.classList.remove('show');
+      return;
+    }
+    document.getElementById('structName').value = obj.name || obj.titulo || '';
+    if (type === 'categoria' && obj.temaId) parentSelect.value = obj.temaId;
+    if (type === 'subcategoria' && obj.categoriaId) parentSelect.value = obj.categoriaId;
+  } else if (parentHint) {
+    parentSelect.value = parentHint;
+  } else {
+    parentSelect.value = '';
+  }
+}
+
+// Modal notas
+let currentNoteEdit = null;
+function openNoteModal(id = null) {
+  currentNoteEdit = id;
+  const modal = document.getElementById('modalEditor');
+  modal.classList.add('show');
+
+  document.getElementById('noteTitle').value = '';
+  document.getElementById('noteContent').value = '';
+  document.getElementById('noteTags').value = '';
+  document.getElementById('notePlaceType').value = 'root';
+  rebuildPlaceOptions(document.getElementById('notePlaceId'));
+
+  if (id) {
+    const note = store.notas.find(n => n.id == id);
+    if (!note) return alert('Nota no encontrada');
+    document.getElementById('noteTitle').value = note.title || '';
+    document.getElementById('noteContent').value = note.content || '';
+    document.getElementById('noteTags').value = (note.tags || []).join(',');
+    if (note.place === 'root') {
+      document.getElementById('notePlaceType').value = 'root';
+      document.getElementById('notePlaceId').value = 'root';
+    } else {
+      const [type_, id_] = note.place.split(':');
+      document.getElementById('notePlaceType').value = type_;
+      document.getElementById('notePlaceId').value = note.place;
+    }
+  }
+}
+
+// Cambiar select notePlaceType
+document.getElementById('notePlaceType').onchange = function () {
+  const type = this.value;
+  const notePlaceId = document.getElementById('notePlaceId');
+  notePlaceId.innerHTML = '';
+
+  if (type === 'root') {
+    const opt = document.createElement('option');
+    opt.value = 'root';
+    opt.textContent = 'Raíz';
+    notePlaceId.appendChild(opt);
+  } else if (type === 'tema') {
+    store.temas.forEach(t => {
+      const o = document.createElement('option');
+      o.value = 'tema:' + t.id;
+      o.textContent = t.name;
+      notePlaceId.appendChild(o);
+    });
+  } else if (type === 'categoria') {
+    store.categorias.forEach(c => {
+      const o = document.createElement('option');
+      o.value = 'categoria:' + c.id;
+      o.textContent = c.name;
+      notePlaceId.appendChild(o);
+    });
+  } else if (type === 'subcategoria') {
+    store.subcategorias.forEach(s => {
+      const o = document.createElement('option');
+      o.value = 'subcategoria:' + s.id;
+      o.textContent = s.name;
+      notePlaceId.appendChild(o);
+    });
+  }
+};
+
+// Guardar nota
+document.getElementById('btn-save-note').onclick = async () => {
+  const title = document.getElementById('noteTitle').value.trim();
+  const content = document.getElementById('noteContent').value.trim();
+  const tagsRaw = document.getElementById('noteTags').value;
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+  const place = document.getElementById('notePlaceId').value;
+
+  if (!title && !content) {
+    alert('Debes escribir al menos un título o contenido');
+    return;
+  }
+
+  if (currentNoteEdit) {
+    const note = store.notas.find(n => n.id === currentNoteEdit);
+    if (!note) return alert('Nota no encontrada');
+    note.title = title;
+    note.content = content;
+    note.tags = tags;
+    note.place = place;
+  } else {
+    store.notas.push({
+      id: uid(),
+      title,
+      content,
+      tags,
+      place,
+      createdAt: now(),
+    });
+  }
+  await saveData(store);
+  document.getElementById('modalEditor').classList.remove('show');
+  currentNoteEdit = null;
+  store = await loadData();
+  renderAll();
+};
+
+// Eliminar nota
+document.getElementById('btn-delete-note').onclick = () => {
+  if (!currentNoteEdit) return alert('No hay nota seleccionada');
+
+  showConfirm('¿Eliminar nota?', async () => {
+    // Quitamos la nota del store en memoria
+    store.notas = store.notas.filter(n => n.id !== currentNoteEdit);
+    currentNoteEdit = null;
+    // Cerramos modal
+    document.getElementById('modalEditor').classList.remove('show');
+    // Guardamos una sola vez todo el store
+    await saveData(store);
+    // Recargamos estado
+    store = await loadData();
+    renderAll();
+  });
+};
+
+// Cerrar modal edición nota
+document.getElementById('btn-close-editor').onclick = () => {
+  currentNoteEdit = null;
+  document.getElementById('modalEditor').classList.remove('show');
+};
+
+document.getElementById('btn-close-editor').onclick = () => {
+  currentNoteEdit = null;
+  document.getElementById('modalEditor').classList.remove('show');
+};
+document.getElementById('btn-close-struct').onclick = () => {
+  currentStructEdit = null;
+  document.getElementById('modalStruct').classList.remove('show');
+};
+document.getElementById('btn-close-view').onclick = () => {
+  document.getElementById('modalViewNote').classList.remove('show');
+};
+document.getElementById('confirmNo').onclick = () => {
+  document.getElementById('modalConfirm').classList.remove('show');
+};
+
+// Botones principales
+document.getElementById('btn-new-tema').onclick = () => openStructModal('tema');
+document.getElementById('btn-new-content').onclick = () => openNoteModal();
+
+document.getElementById('btn-clear-all').onclick = () => {
+  showConfirm('¿Borrar TODO? Esta acción es irreversible.', async () => {
+    await fetch('/api/diario/apartado/delete_all', { method: 'POST' });
+    await fetch('/api/diario/subcategoria/delete_all', { method: 'POST' });
+    await fetch('/api/diario/categoria/delete_all', { method: 'POST' });
+    await fetch('/api/diario/tema/delete_all', { method: 'POST' });
+
+    store = await loadData();
+    renderAll();
+  });
+};
+
+// Filtros de búsqueda rápida en notas y estructura
+document.getElementById('filterPlace').onchange = () => {
+  renderNotes();
+};
+
+document.getElementById('filterText').oninput = () => {
+  renderNotes();
+};
+
+// Filtro rápido en estructura lateral
+document.getElementById('quick-filter').oninput = () => {
+  const term = document.getElementById('quick-filter').value.trim().toLowerCase();
+  document.querySelectorAll('#structureTree .node').forEach(node => {
+    const titleEl = node.querySelector('.title');
+    const text = titleEl ? titleEl.textContent.toLowerCase() : '';
+    node.style.display = term && !text.includes(term) ? 'none' : '';
+  });
+};
+
+// Exportar JSON
+document.getElementById('btn-export').onclick = () => {
+  const blob = new Blob([JSON.stringify(store, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `diario_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// Inicialización
+(async () => {
+  store = await loadData();
+  renderAll();
+})();
+</script>
+{% endblock %}
+{% endblock %}

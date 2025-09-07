@@ -1,0 +1,425 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Gestión de Contraseñas{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg,#252a48 10%,#45fadf 90%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #eafffa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .container {
+    background: rgba(34,38,63,0.98);
+    border-radius: 18px;
+    margin: 40px auto;
+    box-shadow: 0 8px 36px #45fadf22, 0 2px 11px #22335533;
+    max-width: 650px;
+    width: 96vw;
+    padding: 36px 24px;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  @keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-10px);}
+    to {opacity: 1; transform: translateY(0);}
+  }
+  h2 {
+    text-align: center;
+    color: #59ffd4;
+    font-size: 1.9em;
+    text-shadow: 0 2px 13px #0008;
+    margin-bottom: 28px;
+  }
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 25px;
+  }
+  input[type="text"] {
+    flex: 1 1 220px;
+    border-radius: 7px;
+    border: 1.5px solid #2980b9;
+    font-size: 1.1em;
+    padding: 8px 12px;
+    background: #101941;
+    color: #36ffd9;
+    box-shadow: 0 1.5px 6px #18265a37;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+  input[type="text"]:focus {
+    border-color: #5fffd1;
+    background: #1c3355;
+    box-shadow: 0 4px 10px #34d1eb50;
+  }
+  button {
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1.1em;
+    padding: 10px 20px;
+    color: #141622;
+    background: linear-gradient(90deg,#29ffc6 30%, #20e3b2,#1ebba3 82%);
+    box-shadow: 0 2px 10px #11eedd28;
+    transition: transform 0.13s, filter 0.13s;
+  }
+  button:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+  }
+  .password-list {
+    max-height: 320px;
+    overflow-y: auto;
+    border-top: 2px solid #39ffd7a0;
+    padding-top: 14px;
+  }
+  .password-item {
+    background: rgba(22, 24, 48, 0.97);
+    border-radius: 9px;
+    color: #d3fff9;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.4s ease;
+  }
+  .password-name {
+    font-weight: 700;
+    color: #5ef7c5;
+  }
+  .password-text {
+    color: #37f7ff;
+    letter-spacing: 0.1em;
+    user-select: all;
+  }
+  .actions {
+    display: flex;
+    gap: 6px;
+  }
+  .action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    color: #39ffd6;
+    transition: transform 0.2s;
+  }
+  .action-btn:hover {
+    transform: scale(1.2);
+  }
+  /* Modal base */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .modal.show {
+    display: flex;
+    opacity: 1;
+  }
+  .modal-content {
+    background: #22283f;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s ease;
+  }
+  .modal-content h3 {
+    margin-bottom: 16px;
+    color: #5fffd1;
+  }
+  .modal-content input {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  .modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 12px;
+  }
+  .modal-buttons button {
+    flex: 1;
+    margin: 0 5px;
+  }
+  .flash-message {
+    text-align: center;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  .flash-message.success { color: #38ff88; }
+  .flash-message.error { color: #ff536b; }
+
+  .top-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .top-controls input[type="text"] {
+    flex: 1 1 220px;
+  }
+  .toggle-btn {
+    background: linear-gradient(90deg,#ff9f43 30%, #ff7849);
+    color: #141622;
+  }
+  .toggle-btn:hover {
+    filter: brightness(1.1);
+  }
+  .hidden-pass {
+    letter-spacing: 0.2em;
+    color: #39ffd6;
+  }
+  .single-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    color: #ffc857;
+    transition: transform 0.2s;
+  }
+  .single-toggle:hover {
+    transform: scale(1.2);
+  }
+
+  /* Responsive ajustes */
+  @media (max-width: 600px) {
+    .container {
+      padding: 24px 8px;
+      max-width: 92vw;
+      width: 92vw;
+      margin: 20px 0;
+      border-radius: 0;
+    }
+    h2 {
+      font-size: 1.3em;
+    }
+    .password-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+      width: 98%;
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .password-text {
+      font-size: 0.95em;
+      word-break: break-all;
+    }
+    .actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+    .top-controls {
+      flex-direction: column;
+      width: 100%;
+    }
+    .top-controls input[type="text"], .top-controls button {
+      width: 100%;
+    }
+    #searchInput {
+      max-width: 240px;
+      max-height: 40px;
+      width: 90%;
+      margin-left: auto;
+      margin-right: auto;
+      display: block;
+    }
+    .modal-content {
+      max-width: 98vw;
+      padding: 14px 6px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h2>Gestión de Contraseñas</h2>
+
+  <form method="POST" action="{{ url_for('main.gestor_contrasenas') }}">
+    <input type="text" name="name" placeholder="Nombre o sitio" required>
+    <input type="text" name="password" placeholder="Contraseña" required>
+    <button type="button" id="genBtn">🔄 Generar</button>
+    <button type="submit">💾 Guardar</button>
+  </form>
+
+  <!-- Controles superiores -->
+  <div class="top-controls">
+    <input type="text" id="searchInput" placeholder="Buscar por nombre...">
+    <button type="button" id="togglePasswords" class="toggle-btn">👁️ Mostrar todas</button>
+  </div>
+
+  <div class="password-list">
+    {% for entry in passwords %}
+      <div class="password-item" data-id="{{ entry.id }}" data-name="{{ entry.name }}" data-password="{{ entry.password }}">
+        <span class="password-name">{{ entry.name }}</span>
+        <span class="password-text hidden-pass">••••••••</span>
+        <div class="actions">
+          <button class="single-toggle" onclick="toggleSinglePassword(this)">👁️</button>
+          <button class="action-btn" onclick="editPassword(this)">✏️</button>
+          <button class="action-btn" onclick="confirmDelete(this)">🗑️</button>
+          <button class="action-btn" onclick="copyToClipboard(this)">📋</button>
+        </div>
+      </div>
+    {% else %}
+      <p>No hay contraseñas guardadas.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Modal editar -->
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h3>Editar contraseña</h3>
+    <input type="text" id="editName">
+    <input type="text" id="editPassword">
+    <div class="modal-buttons">
+      <button onclick="saveEdit()">💾 Guardar</button>
+      <button onclick="closeModal('editModal')">❌ Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal eliminar -->
+<div class="modal" id="deleteModal">
+  <div class="modal-content">
+    <h3>¿Eliminar esta contraseña?</h3>
+    <div class="modal-buttons">
+      <button onclick="deleteConfirmed()">✅ Sí</button>
+      <button onclick="closeModal('deleteModal')">❌ No</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+  let currentItem = null;
+  let passwordsVisible = false;
+
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) {
+      window.location.reload();
+    }
+  });
+
+  document.getElementById('genBtn').addEventListener('click', async () => {
+    const resp = await fetch('{{ url_for("main.generate_password") }}?length=16');
+    const data = await resp.json();
+    document.querySelector('input[name="password"]').value = data.password;
+  });
+
+  function copyToClipboard(btn) {
+    const text = btn.parentElement.previousElementSibling.dataset.realpass || btn.parentElement.previousElementSibling.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✅';
+      setTimeout(() => btn.textContent = '📋', 1500);
+    });
+  }
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('show');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+    setTimeout(() => document.getElementById(id).style.display = 'none', 300);
+  }
+
+  function editPassword(btn) {
+    currentItem = btn.closest('.password-item');
+    document.getElementById('editName').value = currentItem.dataset.name;
+    document.getElementById('editPassword').value = currentItem.dataset.password;
+    openModal('editModal');
+  }
+
+  async function saveEdit() {
+    const id = currentItem.dataset.id;
+    const newName = document.getElementById('editName').value;
+    const newPass = document.getElementById('editPassword').value;
+
+    currentItem.querySelector('.password-name').textContent = newName;
+    currentItem.querySelector('.password-text').textContent = passwordsVisible ? newPass : '••••••••';
+    currentItem.querySelector('.password-text').dataset.realpass = newPass;
+    currentItem.dataset.name = newName;
+    currentItem.dataset.password = newPass;
+
+    await fetch(`/update_password/${id}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name: newName, password: newPass})
+    });
+
+    closeModal('editModal');
+    currentItem = null;
+  }
+
+  function confirmDelete(btn) {
+    currentItem = btn.closest('.password-item');
+    openModal('deleteModal');
+  }
+
+  async function deleteConfirmed() {
+    const id = currentItem.dataset.id;
+    currentItem.remove();
+    await fetch(`/delete_password/${id}`, { method: 'POST' });
+    closeModal('deleteModal');
+    currentItem = null;
+  }
+
+  // Mostrar/Ocultar todas las contraseñas
+  document.getElementById('togglePasswords').addEventListener('click', () => {
+    passwordsVisible = !passwordsVisible;
+    document.querySelectorAll('.password-item').forEach(item => {
+      const passSpan = item.querySelector('.password-text');
+      if (passwordsVisible) {
+        passSpan.textContent = item.dataset.password;
+      } else {
+        passSpan.textContent = '••••••••';
+      }
+    });
+    document.getElementById('togglePasswords').textContent = passwordsVisible ? '🙈 Ocultar todas' : '👁️ Mostrar todas';
+  });
+
+  // Mostrar/Ocultar una sola contraseña
+  function toggleSinglePassword(btn) {
+    const passSpan = btn.closest('.password-item').querySelector('.password-text');
+    if (passSpan.textContent === '••••••••') {
+      passSpan.textContent = passSpan.closest('.password-item').dataset.password;
+    } else {
+      passSpan.textContent = '••••••••';
+    }
+  }
+
+  // Filtro de búsqueda
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    const filter = e.target.value.toLowerCase();
+    document.querySelectorAll('.password-item').forEach(item => {
+      const name = item.dataset.name.toLowerCase();
+      item.style.display = name.includes(filter) ? 'flex' : 'none';
+    });
+  });
+</script>
+{% endblock %}

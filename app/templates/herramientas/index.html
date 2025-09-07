@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Herramientas Disponibles{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<style>
+<style>
+    :root {
+      --fondo: linear-gradient(120deg, #232944 10%, #40ffe8 110%);
+      --fondo-morado: linear-gradient(120deg,#2f2156 24%,#9e44dc 85%,#5831a6 100%);
+      --glas: rgba(42, 62, 110, 0.34);
+      --carta: rgba(40, 59, 110, 0.96);
+      --carta-morado: rgba(80,46,120,0.96);
+      --titulo: #47ffdf;
+      --titulo-morado: #c271ff;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      width: 100vw;
+      background: var(--fondo, linear-gradient(120deg,#232944 10%,#40ffe8 110%)), #1d2035;
+      color: #ebfcff;
+      font-family: 'Share Tech Mono', monospace, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.7s cubic-bezier(.85,.01,.16,.98), color 0.4s linear;
+      overflow-x: hidden;
+      padding-bottom: 80px;
+    }
+    body.morado {
+      background: var(--fondo-morado), #2a1846;
+      color: #f5eaff;
+    }
+
+    /* Botón cambio de tema */
+    .cambiar-tema-btn {
+      position: absolute;
+      top: 26px;
+      right: 40px;
+      min-width: 140px;
+      min-height: 40px;
+      background: #51ffe1;
+      color: #16476e;
+      border: none;
+      border-radius: 20px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 18px #47fffa44, 0 2px 6px #0002;
+      padding: 8px 22px 8px 12px;
+      z-index: 200;
+      outline: none;
+      user-select: none;
+      transition: background .15s, color .10s;
+    }
+    .cambiar-tema-btn i { font-size: 1.13em; color: #15e4c7; margin-right: 7px; }
+    body.morado .cambiar-tema-btn { background: #b272fd; color: #220042;}
+    body.morado .cambiar-tema-btn i { color: #c271ff; }
+    .cambiar-tema-btn:focus, .cambiar-tema-btn:hover { background: #a879ff; color: #fff; }
+
+    /* Contenedor principal a modo de card glass */
+    .container-juegos {
+      margin-top: 85px;
+      background: var(--carta);
+      border-radius: 18px;
+      box-shadow: 0 5px 30px #16fffa28, 0 2px 8px #22336311;
+      padding: 42px 30px 32px 30px;
+      min-width: 230px;
+      max-width: 420px;
+      width: calc(100vw - 30px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1.2px solid #fff3;
+      animation: fadeIn 0.9s cubic-bezier(.65,-0.03,.19,1.08);
+    }
+    body.morado .container-juegos {
+      background: var(--carta-morado);
+      box-shadow: 0 7px 32px #c271ff24, 0 1.5px 8px #7e49fa11;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 1.54em;
+      color: var(--titulo);
+      letter-spacing: 2px;
+      font-weight: 700;
+      width: 100%;
+      text-shadow: 0 7px 30px #0005, 0 2px 8px #fff3;
+    }
+    body.morado h1 { color: var(--titulo-morado);}
+    ul {
+      list-style: none;
+      padding: 0;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+    li {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+    .juego-link {
+      background: linear-gradient(96deg, #51ffe1 0%, #288aff 99%);
+      color: #132a38;
+      font-weight: bold;
+      font-size: 1.1em;
+      border-radius: 12px;
+      text-align: center;
+      width: 100%;
+      min-height: 54px;
+      padding: 0.9em 0.55em;
+      box-shadow: 0 4px 21px #50bff937;
+      border: 2px solid transparent;
+      letter-spacing: 1px;
+      text-decoration: none;
+      outline: none;
+      transition: background 0.19s, color 0.15s, box-shadow 0.14s, border 0.13s, transform 0.13s;
+      user-select: none;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+    }
+    body.morado .juego-link {
+      background: linear-gradient(96deg, #c271ff 0%, #7f3bdb 99%);
+      color: #230033;
+    }
+    .juego-link:hover, .juego-link:focus {
+      background: #fff;
+      color: #288aff;
+      border: 2px solid #51ffe1;
+      text-decoration: none;
+      transform: scale(1.035);
+      box-shadow: 0 12px 34px #51ffe183, 0 4px 17px #2a66eb44;
+      filter: brightness(1.07);
+    }
+    body.morado .juego-link:hover, body.morado .juego-link:focus {
+      background: #faf1ff;
+      color: #ae2bf9;
+      border: 2px solid #c271ff;
+    }
+
+    /* Navegación bottom nav tipo app */
+    .main-bottom-nav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 99;
+      background: var(--glas);
+      backdrop-filter: blur(8px);
+      display: flex; justify-content: center; align-items: stretch;
+      box-shadow: 0 -6px 60px #1affff33;
+      border-top: 2px solid #51ffe1a1;
+      font-family: inherit;
+      width: 100vw;
+      border-radius: 22px 22px 0 0;
+    }
+    .nav-btn {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-decoration: none; background: none; border: none; padding: 13px 0 8px 0;
+      color: #51ffe1; font-weight: 700; font-size: 1.12em; outline: none; cursor: pointer;
+      letter-spacing: 0.8px;
+      box-shadow: none;
+    }
+    .nav-btn:hover, .nav-btn:focus {
+      color: #07b4f7;
+      background: #47ffdf16;
+      box-shadow: 0 -1.5px 10px #51ffe14f;
+    }
+    .nav-icon { font-size: 1.39em; display: block; margin-bottom: 2px; line-height: 1; }
+    .nav-label { font-size: 1em; margin-top: 1px; display: block; }
+    
+    @keyframes fadeIn {
+      0% { opacity:0; transform:scale(.97);}
+      100% { opacity:1; transform:scale(1);}
+    }
+    @media (max-width:580px) {
+      .cambiar-tema-btn{ right:14px; top:14px;}
+      .container-juegos{padding: 5vw 1vw 7vw 1vw; margin-top:50px;}
+      h1{font-size:1.15em;}
+      ul{gap: 13px;}
+    }
+    @media (max-width:400px) {
+      .container-juegos{ border-radius:10px; }
+      .juego-link{ font-size: 1em; padding: 0.62em 0.1em; min-height: 42px;}
+    }
+  </style>
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tools-container" role="main" aria-label="Herramientas disponibles">
+  <h1 class="tools-title">Herramientas Disponibles</h1>
+  <div class="tools-grid">
+    <a href="{{ url_for('herramientas.calculadora') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa fa-calculator"></i></span>Calculadora Básica
+    </a>
+    <a href="{{ url_for('herramientas.matrices') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa fa-th"></i></span>Calculadora de Matrices
+    </a>
+    <a href="{{ url_for('herramientas.determinante') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-table-cells-large"></i></span>Calculadora de Determinantes
+    </a>
+
+    <a href="{{ url_for('herramientas.estadistica') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-chart-bar"></i></span>Herramientas de Estadística
+    </a>
+    <a href="{{ url_for('herramientas.conversores') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa fa-exchange-alt"></i></span>Conversores y Calculadoras
+    </a>
+    <a href="{{ url_for('herramientas.unidades') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-ruler-combined"></i></span>Conversor de Unidades
+    </a>
+
+    <a href="{{ url_for('herramientas.tabla_verdad') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-table-list"></i></span>Tablas de Verdad Lógica
+    </a>
+    <a href="{{ url_for('herramientas.automata') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-project-diagram"></i></span>Simulador de Autómata Finito
+    </a>
+
+    <a href="{{ url_for('main.gestor_contrasenas') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-key"></i></span>Gestor de Contraseñas
+    </a>
+    <a href="{{ url_for('herramientas.diario') }}" class="tool-card" tabindex="0">
+      <span class="icon"><i class="fa-solid fa-book"></i></span>Diario Personal
+    </a>
+
+    <a href="{{ url_for('main.home') }}" class="back-card" tabindex="0">
+      <span class="icon"><i class="fa fa-home"></i></span>Volver al Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}

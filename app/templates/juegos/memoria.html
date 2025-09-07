@@ -1,0 +1,301 @@
+{% extends "juegos/base_juegos.html" %}
+
+{% block title %}🧠 Juego de Memoria{% endblock %}
+
+{% block extrastyle %}
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<style>
+  :root {
+    --glass: rgba(44, 59, 110, 0.92);
+    --acierto: #2edfa7;
+    --error: #e6785b;
+    --click: #19fbde;
+    --footer-bg: rgba(32,44,76,0.93);
+    --footer-border: #3ffbda;
+    --footer-link: #36f1cc;
+    --footer-link-hover-bg: linear-gradient(90deg,#43ffd0 0%,#1d4d6e 100%);
+  }
+  html, body {
+    margin: 0; padding: 0;
+    background: linear-gradient(120deg,#212646 10%,#45fadf 90%);
+    color: #f1feff;
+    font-family: 'Share Tech Mono', monospace, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex; flex-direction: column;
+  }
+  h1 {
+    margin: 20px 0 5px 0;
+    text-align: center;
+    color:#3ffbda;
+    font-size:clamp(1.4em,4vw,2.2em);
+    letter-spacing:2px;
+    text-shadow:0 2px 16px #283a5a70;
+  }
+  #menu-juegos {
+    margin: 12px auto;
+    display: flex; gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .juego-btn {
+    padding: 0.6em 1em;
+    background: #151f33;
+    border-radius: 8px;
+    color: #26ffe2;
+    font-weight: 700;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 110px;
+    text-align: center;
+  }
+  .juego-btn.selected {
+    background: #00cfff;
+    color: #23272f;
+  }
+  .juego-btn:hover:not(.selected) { background:#33fbee33; }
+
+  #config {
+    margin: 15px auto;
+    display: flex; flex-wrap: wrap;
+    gap: 12px;
+    align-items: center; justify-content: center;
+    background: var(--glass);
+    border-radius: 10px;
+    padding: 10px 15px;
+  }
+  #config label, #config select {
+    font-size: 1em;
+    font-weight: 600;
+    color: #fff;
+  }
+  #config select {
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: none;
+    background: #1a2a4c;
+    color: #26ffe2;
+    font-weight: bold;
+  }
+  #restart {
+    background: #19fbde;
+    color:#222b38;
+    border-radius: 7px;
+    border:none;
+    font-size: 1em;
+    font-weight: bold;
+    padding: 6px 14px;
+    cursor:pointer;
+  }
+  #stats {
+    margin: 12px auto;
+    padding: 8px 15px;
+    background: #22ebff24;
+    font-size: 0.95em;
+    border-radius: 8px;
+    text-align: center;
+  }
+  #game-board {
+    display:grid; gap:8px;
+    justify-content:center;
+    margin: 15px auto;
+    background: var(--glass);
+    border-radius:15px;
+    padding: 10px;
+    width: 95%;
+    max-width: 500px;
+  }
+  .card {
+    aspect-ratio: 1/1;
+    background: #243858;
+    color: #fff;
+    font-size: clamp(1.4em,4vw,2em);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    border:2px solid #00f5ff12;
+  }
+  .card.flipped, .card.matched {
+    background: #12f2d2;
+    color: #23272f;
+  }
+  .card.matched {
+    background: #26e87a;
+    animation: matchflash 0.4s;
+  }
+  @keyframes matchflash {
+    0%{ background:#aaffbf;}
+    100%{ background:#26e87a;}
+  }
+  #next-level {
+    margin: 10px auto;
+    padding: 10px 22px;
+    background: #23ffce;
+    color: #191f28;
+    border-radius: 8px;
+    font-weight:bold;
+    cursor: pointer;
+    display: none;
+  }
+  @media (max-width:600px){
+    .card{font-size:1.2em;}
+  }
+  .card.error {
+    animation: shake 0.4s;
+    background: var(--error) !important;
+    color: #fff !important;
+  }
+  @keyframes matchflash {
+    0%{ background:#aaffbf;}
+    100%{ background:#00b894;}
+  }
+  @keyframes shake {
+    0% { transform: translateX(0);}
+    25% { transform: translateX(-5px);}
+    50% { transform: translateX(5px);}
+    75% { transform: translateX(-5px);}
+    100% { transform: translateX(0);}
+  }
+
+  .level-buttons {
+    margin: 10px auto;
+    display: flex; gap: 12px;
+    justify-content: center;
+  }
+  .level-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight:bold;
+    border:none;
+    cursor:pointer;
+    transition: all 0.3s;
+  }
+  #prev-level { background: #ffeaa7; color: #2d3436; }
+  #next-level { background: #55efc4; color: #192b27;}
+  .level-btn:hover { transform: scale(1.07); filter: brightness(1.1);}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>🧠 Juego de Memoria</h1>
+
+<div id="menu-juegos">
+  
+  <button class="juego-btn" onclick="location.href='{{ url_for('main.calculo_mental') }}'">Lógica Matemática</button>
+  <button class="juego-btn selected">Memoria</button>
+  <button class="juego-btn" onclick="location.href='{{ url_for('main.secuencia_inversa') }}'">Secuencia inversa</button>
+</div>
+
+<div id="main-content">
+  <div id="config">
+    <label for="tema">Tema:</label>
+    <select id="tema">
+      <option value="frutas">Frutas</option>
+      <option value="paises">Países y Capitales</option>
+      <option value="informatica">Informática</option>
+      <option value="animales">Animales</option>
+    </select>
+    <button id="restart">Reiniciar</button>
+  </div>
+  <div id="stats"></div>
+  <div id="game-board"></div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+  const TEMAS = {
+    frutas: ['🍎','🍌','🍊','🍇','🥝','🍓','🍒','🍍','🥭','🍉'],
+    paises: ['🇪🇸Madrid','🇫🇷París','🇮🇹Roma','🇩🇪Berlín','🇬🇧Londres','🇺🇸Washington','🇯🇵Tokio','🇧🇷Brasilia','🇦🇷Buenos Aires','🇲🇽CDMX'],
+    informatica: ['CPU','RAM','🖥️','💾','SQL','API','USB','SSD','GPU','OS'],
+    animales: ['🐶','🐱','🦊','🐻','🦁','🐯','🐼','🐵','🐸','🐧','🦉','🦄','🐢','🐙']
+  };
+
+  const LEVELS = [3, 5, 7, 9, 11, 12];
+  let state = {tema:"frutas",level:0,cards:[],flipped:[],matched:[],clickCount:0,startTime:0,totalTime:0,times:[],running:false};
+
+  function shuffle(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+  function now(){return performance.now();}
+  function showStats(win=false){
+    const t=state.totalTime||((now()-state.startTime));
+    let stats=`<b>Nivel:</b> ${state.level+1}<br>`;
+    stats+=`<b>Pares:</b> ${LEVELS[state.level]}<br>`;
+    stats+=`<b>Clicks:</b> ${state.clickCount}<br>`;
+    if(win){stats+=`<b>¡Completado!</b> en ${Math.round(t/1000)}s`; }
+    document.getElementById('stats').innerHTML=stats;
+  }
+
+  function loadLevel(){
+    const items = shuffle([...TEMAS[state.tema]]);
+    const count=LEVELS[state.level];
+    let elems=items.slice(0,count);
+    let board=shuffle([...elems,...elems]);
+    const boardDiv=document.getElementById('game-board');
+    let gridCols=Math.ceil(Math.sqrt(board.length));
+    boardDiv.style.gridTemplateColumns=`repeat(${gridCols},1fr)`;
+    boardDiv.innerHTML='';
+    board.forEach((txt,idx)=>{
+      const div=document.createElement('div');
+      div.className='card';
+      div.dataset.idx=idx;
+      div.onclick=()=>flipCard(idx,div,txt);
+      boardDiv.appendChild(div);
+    });
+    state.cards=board.map((txt,idx)=>({val:txt,idx}));
+    state.startTime=now();state.flipped=[];state.matched=[];state.clickCount=0;state.running=true;
+    showStats();
+  }
+
+  function flipCard(idx,el,value){
+    if(state.flipped.length===2||el.classList.contains('flipped')||el.classList.contains('matched'))return;
+    el.textContent=value;
+    el.classList.add('flipped');
+    state.flipped.push({idx,el,value});
+    state.clickCount++;
+    if(state.flipped.length===2){
+      const[a,b]=state.flipped;
+      if(a.value===b.value){
+        a.el.classList.add('matched');b.el.classList.add('matched');
+        state.matched.push(a.idx,b.idx);
+        state.flipped=[];
+        if(state.matched.length===state.cards.length)endLevel();
+      }else{
+        a.el.classList.add('error');
+        b.el.classList.add('error');
+        setTimeout(()=>{
+          a.el.textContent='';b.el.textContent='';
+          a.el.classList.remove('flipped','error');b.el.classList.remove('flipped','error');
+          state.flipped=[];
+        },700);
+      }
+    }
+    showStats();
+  }
+
+function endLevel(){
+  state.running=false;
+  state.totalTime=now()-state.startTime;
+  showStats(true);
+
+  // Pasar automáticamente al siguiente nivel después de 1.5s
+  setTimeout(()=>{
+    if(state.level+1 < LEVELS.length){
+      state.level++;
+    } else {
+      state.level = 0; // Reinicia al acabar todos los niveles
+    }
+    loadLevel();
+  }, 1500);
+}
+
+
+  document.getElementById('restart').onclick=function(){state.level=0;loadLevel();}
+  document.getElementById('tema').onchange=function(){state.tema=this.value;state.level=0;loadLevel();}
+
+  window.onload=()=>{loadLevel();}
+</script>
+{% endblock %}

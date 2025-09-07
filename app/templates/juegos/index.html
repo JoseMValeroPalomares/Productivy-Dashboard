@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Selecciona un Juego{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+<style>
+  /* Grid general */
+  .tools-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+  }
+
+  .tools-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.2rem;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  /* Cada tarjeta */
+  .tool-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    height: 120px;          /* 👈 Todas las tarjetas misma altura */
+    background: #f6f6f6;
+    padding: 1rem;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+    text-decoration: none;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .tool-card:hover {
+    background: #e6e6ff;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+  }
+
+  /* Icono */
+  .tool-card .icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #5a5aff;
+  }
+
+  /* Botón volver */
+  .back-card {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 120px;                 /* 👈 Misma altura que los juegos */
+    background: #333;
+    color: white;
+    border-radius: 10px;
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: background 0.2s, transform 0.2s;
+  }
+
+  .back-card:hover {
+    background: #555;
+    transform: translateY(-3px);
+  }
+
+  .back-card .icon {
+    margin-right: 0.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tools-container" role="main" aria-label="Selecciona un juego">
+  <h1 class="tools-title">Selecciona un Juego</h1>
+  <div class="tools-grid">
+    {% for juego in juegos %}
+      <a href="{{ juego.ruta }}" class="tool-card" tabindex="0">
+        <span class="icon" aria-hidden="true"><i class="fa fa-gamepad"></i></span>
+        {{ juego.nombre }}
+      </a>
+    {% endfor %}
+
+    <a href="{{ url_for('main.home') }}" class="back-card" tabindex="0">
+      <span class="icon" aria-hidden="true"><i class="fa fa-arrow-left"></i></span>
+      Volver al Dashboard
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}{% endblock %}

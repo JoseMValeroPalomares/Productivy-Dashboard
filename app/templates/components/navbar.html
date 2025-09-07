@@ -1,0 +1,31 @@
+
+<nav class="nav-app" aria-label="Navegación principal">
+  <div class="nav-row">
+    <!-- Botón hamburguesa móvil -->
+    <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-links" id="navLinks">
+      <a href="{{ url_for('main.home') }}" class="nav-link-app">🏠 Inicio</a>
+      <a href="{{ url_for('main.tasks') }}" class="nav-link-app">📋 Tareas</a>
+      <a href="{{ url_for('main.schedule') }}" class="nav-link-app">🗓️ Plan Diario</a>
+      <a href="{{ url_for('main.goals') }}" class="nav-link-app">🎯 Metas</a>
+      <a href="{{ url_for('main.juegos') }}" class="nav-link-app">🎮 Juegos</a>
+      <a href="{{ url_for('main.herramientas') }}" class="nav-link-app">🔧 Herramientas</a>
+    </div>
+
+    <div class="nav-actions">
+      {% if not current_user.is_authenticated %}
+        <a href="{{ url_for('auth.login') }}" class="btn-login">Iniciar sesión</a>
+        <a href="{{ url_for('auth.register') }}" class="btn-register">Regístrate</a>
+      {% else %}
+        <span class="user-greeting">Hola, {{ current_user.username }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Cerrar sesión">Cerrar sesión</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+

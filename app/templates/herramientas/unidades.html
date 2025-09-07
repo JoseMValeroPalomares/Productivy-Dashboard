@@ -1,0 +1,225 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Conversor de Unidades{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(120deg,#243050 25%,#37eecb 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    color: #f3fffa;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  .container {
+    margin-top: 48px;
+    background: rgba(32,44,76,0.97);
+    border-radius: 20px;
+    box-shadow: 0 8px 35px #39ffd755, 0 2px 9px #1f3e4c55;
+    max-width: 410px;
+    width: 94vw;
+    padding: 36px 18px 28px;
+    min-width: 260px;
+    animation: fadein 0.7s;
+  }
+  h2 {
+    text-align: center;
+    color: #3ffbda;
+    font-size: 1.6em;
+    text-shadow: 0 2.5px 10px #12394990;
+    margin-bottom: 30px;
+    letter-spacing: 1.2px;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 17px;
+    gap: 10px;
+  }
+  label {
+    color: #bcfcf3;
+    font-weight: bold;
+    letter-spacing: .5px;
+    margin-right: 5px;
+    font-size: 1.05em;
+  }
+  input[type="number"] {
+    border-radius: 7px;
+    border: 1.2px solid #26e7da;
+    font-size: 1.10em;
+    font-family: inherit;
+    padding: 9px 8px;
+    width: 63px;
+    background: #193a41;
+    color: #02ffde;
+    outline: none;
+    margin-bottom: 3px;
+  }
+  input[type="number"]:focus {
+    border-color: #64ffd6;
+  }
+  select {
+    border-radius: 7px;
+    border: 1.3px solid #39ffd7;
+    font-size: 1em;
+    padding: 8px 12px;
+    background: #152f42;
+    color: #51ffd0;
+    outline: none;
+    min-width: 113px;
+    margin-bottom: 3px;
+  }
+  button {
+    background: linear-gradient(90deg,#39ffd6 23%,#3952ea 90%);
+    color: #162831;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1em;
+    letter-spacing: .4px;
+    padding: 11px 30px;
+    margin: 10px auto 8px auto;
+    cursor: pointer;
+    box-shadow: 0 2.5px 14px #39ffd735;
+    transition: filter 0.1s;
+    display: block;
+  }
+  button:hover { filter: brightness(1.09);}
+  .result {
+    margin-top: 23px;
+    background: #1c2947;
+    color: #eafff2;
+    border-radius: 10px;
+    padding: 22px 9px 15px;
+    min-height: 35px;
+    font-size: 1.13em;
+    box-shadow: 0 2px 18px #32fada3d;
+    font-weight: bold;
+    animation: fadein 0.7s;
+  }
+  .ok { color: #38ff96;}
+  .error { color: #fd7c8e;}
+  .info {
+    margin-top: 7px;
+    color: #a9eaea;
+    font-size: 0.96em;
+    background: #12202d48;
+    border-radius: 8px;
+    padding: 7px 13px;
+    display: inline-block;
+  }
+  @keyframes fadein { from {opacity: 0;} to {opacity: 1;} }
+  @media (max-width: 600px) {
+    .container { padding: 2vw;}
+    .row { flex-direction: column; align-items: stretch; gap: 7px; }
+    select, input { width:98%; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+  <h2>Conversor rápido de unidades</h2>
+  <form id="form" autocomplete="off" onsubmit="conv(); return false;">
+    <div class="row">
+      <label for="cuanti">Cantidad:</label>
+      <input id="cuanti" type="number" value="1" step="any" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){conv();event.preventDefault()}">
+    </div>
+    <div class="row">
+      <select id="fromu">
+        <option value="m">Metro</option>
+        <option value="cm">Centímetro</option>
+        <option value="in">Pulgada</option>
+        <option value="ft">Pie</option>
+        <option value="kg">Kilogramo</option>
+        <option value="g">Gramo</option>
+        <option value="lb">Libra</option>
+        <option value="s">Segundo</option>
+        <option value="min">Minuto</option>
+        <option value="h">Hora</option>
+        <option value="kmh">km/h</option>
+        <option value="ms">m/s</option>
+        <option value="mph">mi/h</option>
+      </select>
+      <span style="font-weight:bold;">a</span>
+      <select id="tou">
+        <option value="m">Metro</option>
+        <option value="cm">Centímetro</option>
+        <option value="in">Pulgada</option>
+        <option value="ft">Pie</option>
+        <option value="kg">Kilogramo</option>
+        <option value="g">Gramo</option>
+        <option value="lb">Libra</option>
+        <option value="s">Segundo</option>
+        <option value="min">Minuto</option>
+        <option value="h">Hora</option>
+        <option value="kmh">km/h</option>
+        <option value="ms">m/s</option>
+        <option value="mph">mi/h</option>
+      </select>
+    </div>
+    <button type="submit">🔄 Convertir</button>
+  </form>
+  <div class="result" id="unresul"></div>
+  <div class="info">
+    <b>Unidades disponibles:</b><br>
+    <b>Distancia</b>: Metro, Centímetro, Pulgada, Pie &nbsp; | &nbsp;
+    <b>Masa</b>: Kilogramo, Gramo, Libra<br>
+    <b>Tiempo</b>: Segundo, Minuto, Hora &nbsp; | &nbsp;
+    <b>Velocidad</b>: km/h, m/s, mi/h
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+const factores = {
+    m: 1, cm: 0.01, in: 0.0254, ft: 0.3048,
+    kg: 1, g: 0.001, lb: 0.453592,
+    s: 1, min: 60, h: 3600,
+    kmh: 1/3.6, ms: 1, mph: 0.44704
+};
+const grupos = {
+  distancia: ["m", "cm", "in", "ft"],
+  masa: ["kg", "g", "lb"],
+  tiempo: ["s", "min", "h"],
+  velocidad: ["kmh", "ms", "mph"]
+};
+function tipoUnidad(u){
+  for(const k in grupos) if(grupos[k].includes(u)) return k;
+  return null;
+}
+function conv(){
+    const val = document.getElementById('cuanti').value;
+    const from = document.getElementById('fromu').value;
+    const to = document.getElementById('tou').value;
+    const resul = document.getElementById('unresul');
+    if(val === "" || isNaN(Number(val))) {
+      resul.innerHTML = "<span class='error'>Introduce una cantidad válida.</span>";
+      return;
+    }
+    const grupoFrom = tipoUnidad(from), grupoTo = tipoUnidad(to);
+    if(grupoFrom !== grupoTo) {
+      resul.innerHTML = "<span class='error'>Conversión no compatible entre tipos diferentes.</span>";
+      return;
+    }
+    let res = Number(val) * factores[from] / factores[to];
+    let resMostrar = (Math.abs(res)<1e-6 || Math.abs(res)>1e6) ? res.toExponential(5) : (+res.toFixed(6));
+    resul.innerHTML = `<span class='ok'>${val}</span> <b>${unidadNombre(from)}</b>
+                = <span class='ok'>${resMostrar}</span> <b>${unidadNombre(to)}</b>`;
+}
+function unidadNombre(u) {
+  return {
+    m:"metros", cm:"centímetros", in:"pulgadas", ft:"pies",
+    kg:"kilogramos", g:"gramos", lb:"libras",
+    s:"segundos", min:"minutos", h:"horas",
+    kmh:"km/h", ms:"m/s", mph:"mi/h"
+  }[u] || u;
+}
+</script>
+{% endblock %}

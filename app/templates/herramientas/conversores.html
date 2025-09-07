@@ -1,0 +1,288 @@
+{% extends "herramientas/base_herra.html" %}
+
+{% block title %}Conversores y Calculadoras{% endblock %}
+
+{% block extrastyle %}
+<style>
+  body {
+    background: linear-gradient(125deg,#1f223c 10%,#38ffd2 100%);
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    margin: 0;
+    padding: 0;
+    color: #edfaff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+  h2 {
+    text-align: center;
+    margin-top: 0;
+    font-size: 1.6em;
+    margin-bottom: 1.1em;
+    color: #5fffd7;
+    text-shadow: 0 2px 14px #0009;
+    letter-spacing: 1.5px;
+  }
+  .main-container {
+    max-width: 420px;
+    width: 96vw;
+    margin: 35px auto 25px auto;
+  }
+  .card {
+    background: rgba(31,34,60,0.95);
+    border-radius: 15px;
+    box-shadow: 0 7px 24px #35e7ff48, 0 2px 9px #312b5082;
+    padding: 30px 25px 26px 25px;
+    margin-bottom: 30px;
+    min-width: 260px;
+    transition: box-shadow 0.19s;
+  }
+  .card:hover {
+    box-shadow: 0 4px 38px #38ffd2a8, 0 2px 11px #5447aa47;
+  }
+  .card label {
+    font-weight: bold;
+    font-size: 1.04em;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+    display: block;
+    color: #83f5e8;
+  }
+  .input-row {
+    margin-bottom: 13px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  input, select, button {
+    font-family: inherit;
+    font-size: 1em;
+    color: #38ffd2;
+    background: #212553;
+    border: 1.5px solid #25336b;
+    border-radius: 7px;
+    padding: 8px 7px;
+    outline: none;
+    transition: box-shadow 0.15s, border 0.16s;
+  }
+  input:focus, select:focus {
+    box-shadow: 0 2px 8px #80ffe590;
+    border: 1.5px solid #38ffd2;
+  }
+  select {
+    min-width: 108px;
+  }
+  button {
+    background: linear-gradient(90deg,#26ffd0 12%,#7397ff 82%);
+    border: none;
+    color: #23253c;
+    font-weight: bold;
+    box-shadow: 0 2.5px 9px #38ffd431;
+    cursor: pointer;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1.08em;
+    transition: filter 0.12s;
+    margin-top: 6px;
+  }
+  button:hover { filter: brightness(1.11);}
+  .section-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.28em;
+    color: #caf4e3;
+    border-bottom: 2px dashed #38ffd2;
+    padding-bottom: 5px;
+    letter-spacing: 1px;
+  }
+  .result {
+    background: #16223c;
+    color: #dafdf9;
+    font-weight: bold;
+    font-size: 1.09em;
+    border-radius: 8px;
+    margin-top: 20px;
+    min-height: 40px;
+    padding: 14px 12px 11px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 14px #38ffd22e;
+    transition: background 0.25s;
+    animation: fade-in 0.8s;
+    white-space: pre-line;
+  }
+  @keyframes fade-in { from {opacity: 0} to {opacity: 1}}
+  .ok { color: #3eff96;}
+  .bad { color: #ff8978;}
+  code { background: #23293e; color: #ffdb57; padding: 2px 5px; border-radius: 4px;}
+  @media (max-width: 550px) {
+    .main-container { padding: 2vw;}
+    .card { padding: 6vw 2vw 5vw 2vw; }
+  }
+  /* Oculta las flechitas de los input[type="number"] en todos los navegadores */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+  <!-- Conversor -->
+  <div class="card">
+    <h2 class="section-title">💡 Conversor Decimal/Binario/Hexadecimal</h2>
+    <form onsubmit="transferBase();return false;" autocomplete="off">
+      <div class="input-row">
+        <label for="num">Número:</label>
+        <input id="num" type="text" value="{{ numero|default('') }}" placeholder="Introduce el número...">
+      </div>
+      <div class="input-row">
+        <label for="from">Base origen:</label>
+        <select id="from">
+          <option {% if origen=='Decimal' %}selected{% endif %}>Decimal</option>
+          <option {% if origen=='Binario' %}selected{% endif %}>Binario</option>
+          <option {% if origen=='Hexadecimal' %}selected{% endif %}>Hexadecimal</option>
+        </select>
+        <label for="to" style="margin-left:7px;">Base destino:</label>
+        <select id="to">
+          <option {% if destino=='Decimal' %}selected{% endif %}>Decimal</option>
+          <option {% if destino=='Binario' %}selected{% endif %}>Binario</option>
+          <option {% if destino=='Hexadecimal' %}selected{% endif %}>Hexadecimal</option>
+        </select>
+      </div>
+      <button type="submit">🔄 Convertir</button>
+    </form>
+    <div id="convres" class="result"></div>
+  </div>
+
+  <!-- Calculadora Ecuaciones -->
+  <div class="card">
+    <h2 class="section-title">📐 Calculadora de Ecuaciones</h2>
+    <div>
+      <b>Lineal:</b> <code>ax + b = 0</code>
+      <form onsubmit="eqLin();return false;">
+        <div class="input-row">
+          a: <input id="la" type="number" value="{{ la|default('1') }}" step="any" style="width:65px;">
+          b: <input id="lb" type="number" value="{{ lb|default('0') }}" step="any" style="width:65px;">
+          <button type="submit">Resolver</button>
+        </div>
+      </form>
+      <div id="linres" class="result"></div>
+    </div>
+    <div style="margin-top:20px;">
+      <b>Cuadrática:</b> <code>ax² + bx + c = 0</code>
+      <form onsubmit="eqCuad();return false;">
+        <div class="input-row">
+          a: <input id="qua" type="number" value="{{ qua|default('1') }}" step="any" style="width:65px;">
+          b: <input id="qub" type="number" value="{{ qub|default('0') }}" step="any" style="width:65px;">
+          c: <input id="quc" type="number" value="{{ quc|default('0') }}" step="any" style="width:65px;">
+          <button type="submit">Resolver</button>
+        </div>
+      </form>
+      <div id="quadres" class="result"></div>
+    </div>
+  </div>
+
+  <!-- Calculadora Errores -->
+  <div class="card">
+    <h2 class="section-title">🧮 Calculadora de Errores</h2>
+    <form onsubmit="errorCalc();return false;">
+      <div class="input-row">
+        Valor real: <input id="real" type="number" step="any" value="{{ real|default('') }}" style="width:90px;">
+        Valor experimental: <input id="exp" type="number" step="any" value="{{ exp|default('') }}" style="width:90px;">
+        <button type="submit">Calcular</button>
+      </div>
+    </form>
+    <div id="errorres" class="result"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script>
+function transferBase(){
+  const val=document.getElementById('num').value.trim();
+  const src=document.getElementById('from').value;
+  const dst=document.getElementById('to').value;
+  let baseSrc = src==="Decimal"?10:(src==="Binario"?2:16);
+  let baseDst = dst==="Decimal"?10:(dst==="Binario"?2:16);
+  let res="";
+  // Validaciones básicas
+  if(val.length==0) {
+    document.getElementById('convres').innerHTML = '<span class="bad">Ingresa un número.</span>';
+    return;
+  }
+  // Validación según base
+  const validInput = {
+    'Decimal': /^[+-]?\d+$/,
+    'Binario': /^[01]+$/,
+    'Hexadecimal': /^[\da-fA-F]+$/
+  };
+  if(!validInput[src].test(val)){
+    document.getElementById('convres').innerHTML = '<span class="bad">Formato incorrecto para '+src+'.</span>';
+    return;
+  }
+  let n=parseInt(val,baseSrc);
+  if(isNaN(n)) {
+    document.getElementById('convres').innerHTML = '<span class="bad">Número inválido.</span>';
+    return;
+  }
+  if(dst=='Decimal') res=n.toString(10);
+  else if(dst=='Binario') res=n.toString(2);
+  else res=n.toString(16).toUpperCase();
+  document.getElementById('convres').innerHTML=`<span class="ok">Resultado: <b>${res}</b></span>`;
+}
+
+function eqLin(){
+  let a = +document.getElementById('la').value, b = +document.getElementById('lb').value;
+  let el = document.getElementById('linres');
+  if(a==0){
+    el.innerHTML='<span class="bad">No existe solución: <code>a=0</code></span>';
+    return;
+  }
+  let x = -b/a;
+  el.innerHTML = `<span class='ok'>Solución: x = <b>${x}</b></span>`;
+}
+
+function eqCuad(){
+  let a=+document.getElementById('qua').value, b=+document.getElementById('qub').value, c=+document.getElementById('quc').value;
+  let el = document.getElementById('quadres');
+  if(a==0) { eqLin(); return;}
+  let disc = b*b-4*a*c;
+  if(disc<0) el.innerHTML="<span class='bad'>No hay soluciones reales</span>";
+  else if(disc==0) el.innerHTML = `<span class='ok'>Solución única: x = <b>${-b/(2*a)}</b></span>`;
+  else {
+      let x1 = (-b+Math.sqrt(disc))/(2*a), x2 = (-b-Math.sqrt(disc))/(2*a);
+      el.innerHTML = `<span class='ok'>Soluciones:<br>x₁ = <b>${x1}</b><br>x₂ = <b>${x2}</b></span>`;
+  }
+}
+
+function errorCalc(){
+  let real=parseFloat(document.getElementById('real').value), exp=parseFloat(document.getElementById('exp').value);
+  let el = document.getElementById('errorres');
+  if(isNaN(real) || isNaN(exp)){
+    el.innerHTML="<span class='bad'>Introduce ambos valores.</span>";
+    return;
+  }
+  let abs = Math.abs(real-exp), rel = Math.abs(real)!==0 ? abs/Math.abs(real):"-";
+  el.innerHTML = `⏩ Error absoluto: <b>${abs}</b><br>⏩ Error relativo: <b>${rel}</b>`;
+}
+
+// Enter activa el botón en los formularios respectivos
+['num','la','lb','qua','qub','quc','real','exp'].forEach(id=>{
+  const inp=document.getElementById(id);
+  if(inp) inp.addEventListener('keydown',function(e){
+    if (e.key==="Enter") this.form && this.form.dispatchEvent(new Event("submit", {cancelable:true}));
+  });
+});
+</script>
+{% endblock %}

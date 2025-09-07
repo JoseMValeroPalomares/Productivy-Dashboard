@@ -1,0 +1,11 @@
+Flask>=2.0
+Flask-Login
+Flask-Migrate
+Flask-SQLAlchemy
+gunicorn
+Werkzeug
+itsdangerous
+Jinja2
+click
+psycopg2-binary    
+python-dotenv      
